@@ -1,0 +1,49 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+@layer base {
+  html, body {
+    @apply h-full overflow-hidden select-none touch-none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  #root {
+    @apply h-full overflow-hidden flex flex-col;
+  }
+
+  /* Safe Area Insets for Android/iOS */
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .safe-mb {
+    margin-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+@layer components {
+  .android-card {
+    @apply bg-white dark:bg-slate-900 rounded-[1.75rem] shadow-sm border border-slate-100 dark:border-slate-800 p-6;
+  }
+  
+  .android-button {
+    @apply h-14 px-6 rounded-2xl flex items-center justify-center font-bold transition-all active:scale-95;
+  }
+
+  .android-fab {
+    @apply fixed bottom-32 right-6 w-14 h-14 bg-indigo-600 text-white rounded-[1.25rem] shadow-xl flex items-center justify-center active:scale-90 transition-all z-20;
+  }
+}
+
+/* Hide scrollbars during transitions */
+::-webkit-scrollbar {
+  display: none;
+}

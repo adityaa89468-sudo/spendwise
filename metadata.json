@@ -1,0 +1,6 @@
+{
+  "name": "SpendWise",
+  "description": "A modern, minimalist expense tracker with Firebase sync and AI-powered financial insights.",
+  "requestFramePermissions": [],
+  "androidPackageName": "com.spend.wise.com"
+}

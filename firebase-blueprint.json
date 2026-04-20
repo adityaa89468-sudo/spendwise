@@ -1,0 +1,57 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User specific settings and budget information",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "monthlyBudget": { "type": "number", "description": "User set monthly budget" },
+        "currency": { "type": "string", "default": "USD" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["email", "createdAt"]
+    },
+    "Transaction": {
+      "title": "Financial Transaction",
+      "description": "An expense or income record",
+      "type": "object",
+      "properties": {
+        "amount": { "type": "number" },
+        "type": { "type": "string", "enum": ["income", "expense"] },
+        "category": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "note": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["amount", "type", "category", "date", "createdAt"]
+    },
+    "Category": {
+      "title": "Transaction Category",
+      "description": "Categorization for transactions",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "type": { "type": "string", "enum": ["income", "expense"] },
+        "color": { "type": "string" },
+        "icon": { "type": "string" }
+      },
+      "required": ["name", "type"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Primary user profile document"
+    },
+    "/users/{userId}/transactions/{transactionId}": {
+      "schema": "Transaction",
+      "description": "Collection of transactions for a user"
+    },
+    "/users/{userId}/categories/{categoryId}": {
+      "schema": "Category",
+      "description": "Custom categories defined by the user"
+    }
+  }
+}

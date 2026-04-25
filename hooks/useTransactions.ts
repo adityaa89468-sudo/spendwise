@@ -8,8 +8,7 @@ import {
   addDoc, 
   deleteDoc, 
   doc, 
-  updateDoc, 
-  serverTimestamp 
+  updateDoc
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Transaction, TransactionType } from '../types';
@@ -29,8 +28,7 @@ export const useTransactions = () => {
 
     const q = query(
       collection(db, 'users', user.uid, 'transactions'),
-      orderBy('date', 'desc'),
-      orderBy('createdAt', 'desc')
+      orderBy('date', 'desc')
     );
 
     const unsubscribe = onSnapshot(q, 

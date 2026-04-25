@@ -32,29 +32,54 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (user) {
           // Fetch or create profile
           const profileRef = doc(db, 'users', user.uid);
-          const profileSnap = await getDoc(profileRef);
           
-          if (profileSnap.exists()) {
-            setProfile(profileSnap.data() as UserProfile);
-          } else {
-            const newProfile: UserProfile = {
+          try {
+            const profileSnap = await getDoc(profileRef);
+            if (profileSnap.exists()) {
+              setProfile(profileSnap.data() as UserProfile);
+            } else {
+              const newProfile: UserProfile = {
+                uid: user.uid,
+                email: user.email || '',
+                displayName: user.displayName || '',
+                monthlyBudget: 25000,
+                currency: 'INR',
+                createdAt: new Date().toISOString(),
+              };
+              await setDoc(profileRef, newProfile);
+              setProfile(newProfile);
+            }
+          } catch (profileError: any) {
+            console.warn("Retrying profile fetch locally due to:", profileError.message);
+            // Fallback to local profile if Firestore is unavailable/permissions issues occur during boot
+            setProfile({
               uid: user.uid,
               email: user.email || '',
               displayName: user.displayName || '',
-              monthlyBudget: 1000,
-              currency: 'USD',
+              monthlyBudget: 25000,
+              currency: 'INR',
               createdAt: new Date().toISOString(),
-            };
-            await setDoc(profileRef, newProfile);
-            setProfile(newProfile);
+            });
           }
         } else {
           setProfile(null);
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error("Auth Profile Error:", error);
-        // Ensure app still loads even if profile fetch fails
-        setProfile(null);
+        
+        // If we are offline and doc is not in cache, fallback to a basic profile
+        if (user && (error.message?.includes('offline') || error.code === 'unavailable')) {
+          setProfile({
+            uid: user.uid,
+            email: user.email || '',
+            displayName: user.displayName || '',
+            monthlyBudget: 25000,
+            currency: 'INR',
+            createdAt: new Date().toISOString(),
+          });
+        } else {
+          setProfile(null);
+        }
       } finally {
         setLoading(false);
       }
@@ -80,7 +105,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       console.error("Auth Error:", error);
-      alert("There was an issue signing in. Please check your connection and try again.");
+      // No window.alert in iframe, we rely on console and UI state
     }
   };
 

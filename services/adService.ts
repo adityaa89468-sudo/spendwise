@@ -14,6 +14,7 @@ export const initializeAdMob = async () => {
   if (!isNative()) return;
   
   await AdMob.initialize({
+    // @ts-ignore
     requestTrackingAuthorization: true,
     testingDevices: ['2077ef9a62d87ee38686f1a07b4ee10b'],
     initializeForTesting: true,
@@ -27,8 +28,8 @@ export const showBanner = async () => {
     adId: 'ca-app-pub-9364231981895017/2923766175',
     adSize: BannerAdSize.ADAPTIVE_BANNER,
     position: BannerAdPosition.BOTTOM_CENTER,
-    margin: 50, // Avoid overlapping the tab bar
-    isTesting: true // REMOVE FOR PRODUCTION
+    margin: 85, // Positioned safely above the bottom navigation bar
+    isTesting: true 
   });
 };
 
@@ -51,5 +52,36 @@ export const showRewardedAd = async (): Promise<AdMobRewardItem | null> => {
   } catch (error) {
     console.error('AdMob Error:', error);
     return null;
+  }
+};
+
+export const prepareInterstitial = async () => {
+  if (!isNative()) return;
+
+  try {
+    await AdMob.prepareInterstitial({
+      adId: 'ca-app-pub-9364231981895017/1460394593',
+      isTesting: true // REMOVE FOR PRODUCTION
+    });
+  } catch (error) {
+    console.error('Prepare Interstitial Error:', error);
+  }
+};
+
+export const showInterstitialAd = async () => {
+  if (!isNative()) return;
+
+  try {
+    // Attempt to show immediately (assumes prepared)
+    await AdMob.showInterstitial();
+  } catch (error) {
+    console.error('Interstitial Ad Error:', error);
+    // Fallback: prepare and try once more if it failed because it wasn't ready
+    await prepareInterstitial();
+    try {
+      await AdMob.showInterstitial();
+    } catch (e) {
+      console.error('Final Interstitial Ad Error:', e);
+    }
   }
 };

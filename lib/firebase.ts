@@ -1,29 +1,40 @@
 
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider } from 'firebase/auth';
+import { 
+  getAuth, 
+  GoogleAuthProvider, 
+  browserLocalPersistence, 
+  setPersistence 
+} from 'firebase/auth';
 import { 
   getFirestore, 
   doc, 
   getDocFromServer, 
-  initializeFirestore, 
-  persistentLocalCache, 
-  persistentMultipleTabManager 
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager
 } from 'firebase/firestore';
 import firebaseConfig from '../firebase-applet-config.json';
 
 const app = initializeApp(firebaseConfig);
 
-// Initialize Firestore with enhanced connectivity settings for web previews
-// Using experimentalForceLongPolling can help bypass proxy/firewall blockers in iframes
+// Initialize Firestore with standard settings and persistent cache
+// We use the default transport (WebSockets) first, as forced long-polling can sometimes timeout in this environment.
 export const db = initializeFirestore(app, {
   localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
-  experimentalForceLongPolling: true,
 }, firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDatabaseId !== '(default)' 
   ? firebaseConfig.firestoreDatabaseId 
   : undefined
 );
 
 export const auth = getAuth(app);
+
+// Enable local persistence for persistent login across app restarts
+// This ensures that 'onAuthStateChanged' can restore the user session immediately
+setPersistence(auth, browserLocalPersistence).catch((err) => {
+  console.error("Firebase Persistence Error:", err);
+});
+
 export const googleProvider = new GoogleAuthProvider();
 
 // Test connection silently - move to a more resilient approach

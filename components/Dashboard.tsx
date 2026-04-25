@@ -2,12 +2,13 @@
 import React from 'react';
 import { useTransactions } from '../hooks/useTransactions';
 import { useAuth } from '../context/AuthContext';
+import { useCategories } from '../hooks/useCategories';
 import { 
   ArrowUpCircle, 
   ArrowDownCircle, 
   TrendingUp, 
-  TrendingDown,
-  Target
+  Target,
+  Wallet
 } from 'lucide-react';
 import { 
   ResponsiveContainer, 
@@ -16,13 +17,26 @@ import {
   XAxis, 
   YAxis, 
   Tooltip, 
-  CartesianGrid 
 } from 'recharts';
 import { format, subDays, isSameDay } from 'date-fns';
+import CategoryIcon from './CategoryIcon';
+
+import { formatCurrency } from '../lib/utils';
 
 const Dashboard: React.FC = () => {
   const { profile } = useAuth();
   const { transactions, loading } = useTransactions();
+  const { categories } = useCategories();
+  const currency = profile?.currency || 'INR';
+
+  const getCategoryColor = (catName: string) => {
+    const cat = categories.find(c => c.name === catName);
+    return cat ? cat.color : '#71717a';
+  };
+
+  const getCategoryIcon = (catName: string) => {
+    return categories.find(c => c.name === catName)?.icon || 'Tag';
+  };
 
   const totalIncome = transactions
     .filter(t => t.type === 'income')
@@ -58,21 +72,26 @@ const Dashboard: React.FC = () => {
           <TrendingUp className="w-40 h-40" />
         </div>
         <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60 mb-2">Total Balance</p>
-        <h2 className="text-5xl font-black tracking-tighter mb-8">${balance.toLocaleString()}</h2>
+        <h2 className="text-5xl font-black tracking-tighter mb-8">{formatCurrency(balance, currency)}</h2>
         <div className="grid grid-cols-2 gap-4">
           <div className="bg-white/10 p-4 rounded-3xl backdrop-blur-sm">
             <p className="text-[10px] font-black uppercase tracking-widest opacity-60 mb-1 flex items-center gap-1">
               <ArrowUpCircle className="w-3 h-3" /> Income
             </p>
-            <p className="text-base font-black">${totalIncome.toLocaleString()}</p>
+            <p className="text-base font-black">{formatCurrency(totalIncome, currency)}</p>
           </div>
           <div className="bg-white/10 p-4 rounded-3xl backdrop-blur-sm">
             <p className="text-[10px] font-black uppercase tracking-widest opacity-60 mb-1 flex items-center gap-1">
               <ArrowDownCircle className="w-3 h-3" /> Expenses
             </p>
-            <p className="text-base font-black">${totalExpenses.toLocaleString()}</p>
+            <p className="text-base font-black">{formatCurrency(totalExpenses, currency)}</p>
           </div>
         </div>
+      </div>
+
+      {/* Ad Placeholder for Integrated Feel */}
+      <div className="mx-2 h-[70px] bg-slate-100 dark:bg-slate-800/50 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center opacity-40">
+        <p className="text-[8px] font-black uppercase tracking-[0.3em] text-slate-400">Sponsored Content</p>
       </div>
 
       {/* Budget Progress */}
@@ -84,7 +103,7 @@ const Dashboard: React.FC = () => {
             </div>
             <div>
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Monthly Budget</p>
-              <p className="font-bold text-sm leading-none">${totalExpenses.toLocaleString()} / ${budget.toLocaleString()}</p>
+              <p className="font-bold text-sm leading-none">{formatCurrency(totalExpenses, currency)} / {formatCurrency(budget, currency)}</p>
             </div>
           </div>
           <p className="text-2xl font-black text-indigo-600">
@@ -140,22 +159,29 @@ const Dashboard: React.FC = () => {
           <button className="text-[10px] font-black text-indigo-600 uppercase tracking-widest p-2 active:bg-indigo-50 dark:active:bg-indigo-900/20 rounded-xl transition-all">View All</button>
         </div>
         <div className="space-y-3">
-          {transactions.slice(0, 4).map((tx) => (
-            <div key={tx.id} className="p-4 bg-white dark:bg-slate-900 rounded-[1.5rem] border border-slate-100 dark:border-slate-800 flex items-center justify-between active:scale-[0.98] transition-transform">
-              <div className="flex items-center gap-4">
-                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${tx.type === 'income' ? 'bg-green-50 text-green-600 dark:bg-green-900/20' : 'bg-red-50 text-red-600 dark:bg-red-900/20'}`}>
-                  {tx.type === 'income' ? <ArrowUpCircle className="w-6 h-6" /> : <ArrowDownCircle className="w-6 h-6" />}
+          {transactions.slice(0, 4).map((tx) => {
+            const catColor = getCategoryColor(tx.category);
+            const catIcon = getCategoryIcon(tx.category);
+            return (
+              <div key={tx.id} className="p-4 bg-white dark:bg-slate-900 rounded-[1.5rem] border border-slate-100 dark:border-slate-800 flex items-center justify-between active:scale-[0.98] transition-transform">
+                <div className="flex items-center gap-4">
+                  <div 
+                    className="w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-sm"
+                    style={{ backgroundColor: catColor }}
+                  >
+                    <CategoryIcon iconName={catIcon} type={tx.type} />
+                  </div>
+                  <div>
+                    <p className="font-bold text-sm tracking-tight">{tx.category}</p>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{format(new Date(tx.date), 'MMM d, yyyy')}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-bold text-sm tracking-tight">{tx.category}</p>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{format(new Date(tx.date), 'MMM d, yyyy')}</p>
-                </div>
+                <p className={`font-black tracking-tight ${tx.type === 'income' ? 'text-green-600' : 'text-red-500'}`}>
+                  {tx.type === 'income' ? '+' : '-'}{formatCurrency(tx.amount, currency)}
+                </p>
               </div>
-              <p className={`font-black tracking-tight ${tx.type === 'income' ? 'text-green-600' : 'text-red-500'}`}>
-                {tx.type === 'income' ? '+' : '-'}${tx.amount.toLocaleString()}
-              </p>
-            </div>
-          ))}
+            );
+          })}
           {transactions.length === 0 && (
             <div className="text-center py-10 opacity-50 bg-slate-100/50 dark:bg-slate-900/50 rounded-[2rem] border border-dashed border-slate-200 dark:border-slate-800">
               <Wallet className="w-12 h-12 mx-auto mb-4 text-slate-300" />

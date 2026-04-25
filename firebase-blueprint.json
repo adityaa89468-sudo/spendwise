@@ -8,7 +8,7 @@
         "email": { "type": "string" },
         "displayName": { "type": "string" },
         "monthlyBudget": { "type": "number", "description": "User set monthly budget" },
-        "currency": { "type": "string", "default": "USD" },
+        "currency": { "type": "string", "default": "INR" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["email", "createdAt"]

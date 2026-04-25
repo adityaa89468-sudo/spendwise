@@ -1,6 +1,7 @@
 
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { useTransactions } from '../hooks/useTransactions';
+import { useCategories } from '../hooks/useCategories';
 import { 
   PieChart, 
   Pie, 
@@ -18,8 +19,14 @@ import { GoogleGenAI } from '@google/genai';
 
 const COLORS = ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#71717a'];
 
+import { formatCurrency } from '../lib/utils';
+import { useAuth } from '../context/AuthContext';
+
 const Insights: React.FC = () => {
+  const { profile } = useAuth();
   const { transactions, loading } = useTransactions();
+  const { categories } = useCategories();
+  const currency = profile?.currency || 'INR';
   const [aiInsight, setAiInsight] = useState<string | null>(null);
   const [isAiLoading, setIsAiLoading] = useState(false);
 
@@ -29,10 +36,17 @@ const Insights: React.FC = () => {
     expenses.forEach(t => {
       totals[t.category] = (totals[t.category] || 0) + t.amount;
     });
-    return Object.entries(totals).map(([name, value]) => ({ name, value }));
-  }, [transactions]);
+    return Object.entries(totals).map(([name, value], index) => {
+      const cat = categories.find(c => c.name === name);
+      return { 
+        name, 
+        value, 
+        color: cat ? cat.color : COLORS[index % COLORS.length] 
+      };
+    });
+  }, [transactions, categories]);
 
-  const generateAIInsight = async () => {
+  const generateAIInsight = useCallback(async () => {
     if (transactions.length === 0) return;
     
     setIsAiLoading(true);
@@ -53,13 +67,13 @@ const Insights: React.FC = () => {
     } finally {
       setIsAiLoading(false);
     }
-  };
+  }, [transactions]);
 
   useEffect(() => {
     if (transactions.length > 0 && !aiInsight && !isAiLoading) {
       generateAIInsight();
     }
-  }, [transactions]);
+  }, [transactions, aiInsight, isAiLoading, generateAIInsight]);
 
   if (loading) return null;
 
@@ -112,8 +126,8 @@ const Insights: React.FC = () => {
                 paddingAngle={8}
                 dataKey="value"
               >
-                {categoryData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} cornerRadius={12} />
+                {categoryData.map((entry) => (
+                  <Cell key={`cell-${entry.name}`} fill={entry.color} cornerRadius={12} />
                 ))}
               </Pie>
               <Tooltip 
@@ -136,7 +150,7 @@ const Insights: React.FC = () => {
         <div className="p-6 bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-sm">
           <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 leading-none">Avg. Spend</p>
           <p className="text-xl font-black text-indigo-600 leading-none truncate">
-            ${transactions.length > 0 ? (transactions.reduce((acc, t) => acc + t.amount, 0) / transactions.length).toFixed(0) : '0'}
+            {formatCurrency(transactions.length > 0 ? (transactions.reduce((acc, t) => acc + t.amount, 0) / transactions.length) : 0, currency)}
           </p>
         </div>
       </div>

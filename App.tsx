@@ -2,38 +2,38 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from './context/AuthContext';
 import { App as CapacitorApp } from '@capacitor/app';
+import { BrowserRouter, Routes, Route, Link, useNavigate } from 'react-router-dom';
 import { 
   BarChart3, 
   History, 
   Plus, 
-  MoreHorizontal, 
   LogOut, 
   LayoutDashboard,
   Wallet,
-  ArrowUpCircle,
-  ArrowDownCircle,
-  Search,
-  Filter,
-  PieChart as PieChartIcon,
   Bell,
   Sparkles,
   Settings as SettingsIcon,
   Moon,
-  Sun
+  Sun,
+  Shield,
+  FileText
 } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import Transactions from './components/Transactions';
 import Insights from './components/Insights';
+import PrivacyPolicy from './components/PrivacyPolicy';
+import TermsConditions from './components/TermsConditions';
 import AddTransactionModal from './components/AddTransactionModal';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import { initializeAdMob, showBanner } from './services/adService';
 
-const App: React.FC = () => {
+const MainApp: React.FC = () => {
   const { user, profile, loading, signInWithGoogle, signOut } = useAuth();
   const [activeTab, setActiveTab] = useState<'dashboard' | 'transactions' | 'insights' | 'settings'>('dashboard');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     initializeAdMob().then(() => {
@@ -77,11 +77,17 @@ const App: React.FC = () => {
           </p>
           <button 
             onClick={signInWithGoogle}
-            className="w-full py-4 px-6 bg-slate-900 dark:bg-indigo-600 text-white font-black uppercase tracking-widest text-xs rounded-2xl shadow-lg hover:-translate-y-1 transition-all flex items-center justify-center gap-3"
+            className="w-full py-4 px-6 bg-slate-900 dark:bg-indigo-600 text-white font-black uppercase tracking-widest text-xs rounded-2xl shadow-lg hover:-translate-y-1 transition-all flex items-center justify-center gap-3 mb-6"
           >
             <img src="https://www.google.com/favicon.ico" className="w-4 h-4 invert" alt="Google" />
             Continue with Google
           </button>
+
+          <div className="flex justify-center gap-4 text-[10px] font-black uppercase tracking-widest text-slate-400">
+            <Link to="/privacy" className="hover:text-indigo-600 transition-colors">Privacy</Link>
+            <span className="opacity-20 text-slate-300">|</span>
+            <Link to="/terms" className="hover:text-indigo-600 transition-colors">Terms</Link>
+          </div>
         </div>
       </div>
     );
@@ -132,19 +138,42 @@ const App: React.FC = () => {
             {activeTab === 'insights' && <Insights />}
             {activeTab === 'settings' && (
               <div className="space-y-6">
-                <h2 className="text-3xl font-black tracking-tight mb-8">Settings</h2>
+                <h2 className="text-3xl font-black tracking-tight mb-8 px-2">Profile</h2>
                 <div className="space-y-4">
-                  <div className="p-6 bg-white dark:bg-slate-800 rounded-[2rem] border border-slate-100 dark:border-slate-700 shadow-sm">
-                    <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Account</p>
-                    <div className="flex items-center justify-between mb-6">
+                  <div className="p-6 bg-white dark:bg-slate-800 rounded-[2.5rem] border border-slate-100 dark:border-slate-700 shadow-sm">
+                    <p className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-4">Account</p>
+                    <div className="flex items-center justify-between mb-6 px-1">
                       <div className="flex items-center gap-4">
                         <img src={user.photoURL || ''} className="w-12 h-12 rounded-2xl border-2 border-indigo-50" alt="Avatar" />
                         <div>
                           <p className="font-bold">{profile?.displayName}</p>
-                          <p className="text-sm text-slate-400">{profile?.email}</p>
+                          <p className="text-sm text-slate-500 dark:text-slate-400">{profile?.email}</p>
                         </div>
                       </div>
                     </div>
+
+                    <p className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-4">Legals</p>
+                    <div className="grid grid-cols-1 gap-3 mb-6">
+                      <button 
+                        onClick={() => navigate('/privacy')}
+                        className="w-full p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl flex items-center justify-between group active:scale-95 transition-all"
+                      >
+                        <div className="flex items-center gap-3">
+                          <Shield className="w-5 h-5 text-indigo-600" />
+                          <span className="font-bold text-sm text-slate-800 dark:text-slate-100">Privacy Policy</span>
+                        </div>
+                      </button>
+                      <button 
+                        onClick={() => navigate('/terms')}
+                        className="w-full p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl flex items-center justify-between group active:scale-95 transition-all"
+                      >
+                        <div className="flex items-center gap-3">
+                          <FileText className="w-5 h-5 text-indigo-600" />
+                          <span className="font-bold text-sm text-slate-800 dark:text-slate-100">Terms & Conditions</span>
+                        </div>
+                      </button>
+                    </div>
+
                     <button 
                       onClick={signOut}
                       className="w-full py-4 text-red-500 font-bold bg-red-50 dark:bg-red-900/20 rounded-2xl flex items-center justify-center gap-2 active:bg-red-100 dark:active:bg-red-900/40 transition-colors mb-4"
@@ -157,13 +186,13 @@ const App: React.FC = () => {
                       onClick={async () => {
                         const reward = await import('./services/adService').then(m => m.showRewardedAd());
                         if (reward) {
-                          alert(`Thank you for supporting us! You earned a virtual high five!`);
+                          console.log("Rewarded ad completed.");
                         }
                       }}
-                      className="w-full py-4 text-indigo-600 font-bold bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl flex items-center justify-center gap-2 active:bg-indigo-100 transition-all"
+                      className="w-full py-4 text-indigo-600 font-bold bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl flex items-center justify-center gap-2 active:bg-indigo-100 transition-all text-sm"
                     >
                       <Sparkles className="w-5 h-5" />
-                      Watch Ad to Support Us
+                      Support via Ad
                     </button>
                   </div>
                 </div>
@@ -196,7 +225,7 @@ const App: React.FC = () => {
               className={`flex flex-col items-center gap-1.5 py-2 px-4 rounded-2xl transition-all relative ${
                 activeTab === tab.id 
                   ? 'text-indigo-600' 
-                  : 'text-slate-400 dark:text-slate-500 active:bg-slate-100 dark:active:bg-slate-800'
+                  : 'text-slate-500 dark:text-slate-500 active:bg-slate-100 dark:active:bg-slate-800'
               }`}
             >
               <div className={`p-1.5 rounded-full transition-colors ${activeTab === tab.id ? 'bg-indigo-50 dark:bg-indigo-900/30' : ''}`}>
@@ -218,6 +247,18 @@ const App: React.FC = () => {
 
       <AddTransactionModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} />
     </div>
+  );
+};
+
+const App: React.FC = () => {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<MainApp />} />
+        <Route path="/privacy" element={<PrivacyPolicy />} />
+        <Route path="/terms" element={<TermsConditions />} />
+      </Routes>
+    </BrowserRouter>
   );
 };
 

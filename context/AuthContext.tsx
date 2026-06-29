@@ -99,13 +99,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error: any) {
       if (error.code === 'auth/popup-closed-by-user') {
         console.log("Sign-in cancelled by user (popup closed).");
-        return;
+        throw error;
       }
       if (error.code === 'auth/cancelled-by-user') {
         console.log("Sign-in cancelled by user.");
-        return;
+        throw error;
       }
       console.error("Auth Error:", error);
+      throw error;
     }
   };
 

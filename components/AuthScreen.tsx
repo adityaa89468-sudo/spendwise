@@ -96,6 +96,27 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ darkMode, setDarkMode }) => {
     }
   };
 
+  const handleGoogleSignIn = async () => {
+    setErrorMsg('');
+    setIsSubmitting(true);
+    try {
+      await signInWithGoogle();
+    } catch (err: any) {
+      if (err?.code === 'auth/popup-closed-by-user' || err?.code === 'auth/cancelled-by-user') {
+        setIsSubmitting(false);
+        return;
+      }
+      console.error(err);
+      if (window.self !== window.top) {
+        setErrorMsg("Google Sign-In popup is restricted inside embedded iframe previews by standard browser privacy controls. Please use the Email & Password login, or click the 'Open in a new tab' button at the top-right of your preview frame to sign in with Google.");
+      } else {
+        setErrorMsg(getFriendlyError(err));
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className={`min-h-screen flex flex-col justify-between p-6 ${darkMode ? 'bg-slate-950 text-white dark' : 'bg-slate-50 text-slate-900'}`}>
       
@@ -297,12 +318,19 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ darkMode, setDarkMode }) => {
           {/* Google Sign In option */}
           <button 
             type="button"
-            onClick={signInWithGoogle}
+            onClick={handleGoogleSignIn}
             className="w-full py-3.5 px-6 bg-slate-50 hover:bg-slate-100 dark:bg-slate-950 dark:hover:bg-slate-900 text-slate-800 dark:text-white font-black uppercase tracking-widest text-3xs rounded-xl shadow-sm border border-slate-100 dark:border-slate-850 transition-all flex items-center justify-center gap-2.5 cursor-pointer"
           >
             <img src="https://www.google.com/favicon.ico" className="w-3.5 h-3.5" alt="Google" />
             Continue with Google ID
           </button>
+
+          {window.self !== window.top && (
+            <div className="mt-4 p-3.5 bg-indigo-50/80 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/50 rounded-xl text-indigo-700 dark:text-indigo-300 text-3xs font-semibold leading-relaxed">
+              <span className="font-black uppercase tracking-wider block mb-1">💡 Sandbox Preview Info:</span>
+              Google Sign-In is restricted inside embedded previews due to standard browser cookie rules. If a white screen appears or login fails, please click the <strong className="text-indigo-600 dark:text-indigo-400">"Open in a new tab"</strong> button in the top right corner of the screen, or use the <strong className="text-indigo-600 dark:text-indigo-400">Email & Password</strong> form.
+            </div>
+          )}
         </div>
       </div>
 

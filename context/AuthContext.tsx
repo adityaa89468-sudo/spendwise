@@ -9,7 +9,7 @@ import {
   createUserWithEmailAndPassword,
   updateProfile
 } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 import { auth, db, googleProvider } from '../lib/firebase';
 import { UserProfile } from '../types';
 
@@ -32,18 +32,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let unsubscribeProfile: (() => void) | null = null;
+
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       try {
         setUser(user);
+        if (unsubscribeProfile) {
+          unsubscribeProfile();
+          unsubscribeProfile = null;
+        }
+
         if (user) {
           // Fetch or create profile
           const profileRef = doc(db, 'users', user.uid);
           
           try {
             const profileSnap = await getDoc(profileRef);
-            if (profileSnap.exists()) {
-              setProfile(profileSnap.data() as UserProfile);
-            } else {
+            if (!profileSnap.exists()) {
               const newProfile: UserProfile = {
                 uid: user.uid,
                 email: user.email || '',
@@ -54,6 +59,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               };
               await setDoc(profileRef, newProfile);
               setProfile(newProfile);
+            } else {
+              setProfile(profileSnap.data() as UserProfile);
             }
           } catch (profileError: any) {
             console.warn("Retrying profile fetch locally due to:", profileError.message);
@@ -67,6 +74,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               createdAt: new Date().toISOString(),
             });
           }
+
+          // Realtime listener
+          unsubscribeProfile = onSnapshot(profileRef, (snapshot) => {
+            if (snapshot.exists()) {
+              setProfile(snapshot.data() as UserProfile);
+            }
+          }, (err) => {
+            console.error("Profile snapshot listener error:", err);
+          });
         } else {
           setProfile(null);
         }
@@ -91,7 +107,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     });
 
-    return unsubscribe;
+    return () => {
+      unsubscribe();
+      if (unsubscribeProfile) unsubscribeProfile();
+    };
   }, []);
 
   const signInWithGoogle = async () => {

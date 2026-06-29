@@ -133,9 +133,9 @@ const App: React.FC = () => {
 
   // Update roommate checked states once group details load
   useEffect(() => {
-    if (currentGroup) {
+    if (currentGroup && currentGroup.members) {
       // Default checking all existing roommates to split list
-      setSelectedRoommates(currentGroup.members.map(m => m.uid));
+      setSelectedRoommates((currentGroup.members || []).map(m => m?.uid).filter(Boolean));
       if (user) {
         setSelectedPayer(user.uid);
       }
@@ -1473,6 +1473,18 @@ const App: React.FC = () => {
                     )}
                   </button>
                 </form>
+
+                <div className="pt-4 border-t border-slate-50 dark:border-slate-850/50 flex flex-col space-y-2">
+                  <span className="text-[9px] font-extrabold uppercase tracking-widest text-slate-400 text-left">
+                    Account Actions
+                  </span>
+                  <button 
+                    onClick={signOut}
+                    className="w-full py-3 text-rose-500 bg-rose-50 dark:bg-rose-950/10 border border-rose-200/20 dark:border-rose-900/40 rounded-xl flex items-center justify-center gap-2 text-xs font-black uppercase tracking-widest transition-all cursor-pointer hover:bg-rose-100 dark:hover:bg-rose-950/40"
+                  >
+                    <LogOut className="w-4 h-4" /> Sign Out
+                  </button>
+                </div>
               </div>
 
               {/* Room card box */}
@@ -1597,6 +1609,7 @@ const App: React.FC = () => {
                       if (window.confirm('Disconnect from this roommate group? You can easily join back later using your room code.')) {
                         try {
                           await resetGroup();
+                          setOnboardingChoice('select');
                           setActiveTab('dashboard');
                         } catch (err) {
                           console.error(err);

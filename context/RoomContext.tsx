@@ -105,7 +105,7 @@ export const RoomProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       setLoadingGroup(false);
     }, (error) => {
-      handleFirestoreError(error, OperationType.GET, groupPath);
+      console.error("Firestore group listener error:", error);
       setLoadingGroup(false);
     });
 
@@ -120,7 +120,7 @@ export const RoomProvider: React.FC<{ children: React.ReactNode }> = ({ children
       expList.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
       setExpenses(expList);
     }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, expensesPath);
+      console.error("Firestore expenses listener error:", error);
     });
 
     // Listen to Settlements
@@ -133,7 +133,7 @@ export const RoomProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setList.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       setSettlements(setList);
     }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, settlementsPath);
+      console.error("Firestore settlements listener error:", error);
     });
 
     // Listen to Notifications
@@ -163,7 +163,7 @@ export const RoomProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // 2. Recalculate Balance Network (Splitwise Debt simplification algorithm)
   useEffect(() => {
-    if (!currentGroup || currentGroup.members.length === 0) {
+    if (!currentGroup || !currentGroup.members || currentGroup.members.length === 0) {
       setSuggestedSettlements([]);
       setMemberBalances({});
       return;
@@ -174,36 +174,39 @@ export const RoomProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const memberNames: { [uid: string]: string } = {};
     
     currentGroup.members.forEach(m => {
-      balances[m.uid] = 0;
-      memberNames[m.uid] = m.displayName;
+      if (m && m.uid) {
+        balances[m.uid] = 0;
+        memberNames[m.uid] = m.displayName || 'Roommate';
+      }
     });
 
     // Process all active expenses to find net credit/debits
-    expenses.forEach(exp => {
-      const amount = exp.amount;
+    (expenses || []).forEach(exp => {
+      if (!exp) return;
+      const amount = exp.amount || 0;
       const payerId = exp.payerId;
       
       // Person who paid gets credited the amount
-      if (balances[payerId] !== undefined) {
+      if (payerId && balances[payerId] !== undefined) {
         balances[payerId] += amount;
       }
 
       // People who owe gets debited their share
-      exp.splits.forEach(split => {
-        if (balances[split.uid] !== undefined) {
-          balances[split.uid] -= split.amount;
+      (exp.splits || []).forEach(split => {
+        if (split && split.uid && balances[split.uid] !== undefined) {
+          balances[split.uid] -= (split.amount || 0);
         }
       });
     });
 
     // Adjust for completed settlements
-    settlements.forEach(settle => {
-      if (settle.status === 'settled') {
+    (settlements || []).forEach(settle => {
+      if (settle && settle.status === 'settled') {
         const from = settle.fromId;
         const to = settle.toId;
-        const amount = settle.amount;
-        if (balances[from] !== undefined) balances[from] += amount;
-        if (balances[to] !== undefined) balances[to] -= amount;
+        const amount = settle.amount || 0;
+        if (from && balances[from] !== undefined) balances[from] += amount;
+        if (to && balances[to] !== undefined) balances[to] -= amount;
       }
     });
 

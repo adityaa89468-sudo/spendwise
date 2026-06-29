@@ -13,23 +13,45 @@ const isNative = () => {
 export const initializeAdMob = async () => {
   if (!isNative()) return;
   
+  const isProduction = import.meta.env.VITE_ADMOB_PRODUCTION === 'true';
+  
   await AdMob.initialize({
-    // @ts-ignore
     requestTrackingAuthorization: true,
-    testingDevices: ['2077ef9a62d87ee38686f1a07b4ee10b'],
-    initializeForTesting: true,
-  });
+    testingDevices: isProduction ? [] : ['2077ef9a62d87ee38686f1a07b4ee10b'],
+    initializeForTesting: !isProduction,
+  } as any);
+
+  // Handle UMP Consent
+  try {
+    const consentInfo = await AdMob.requestConsentInfo();
+    if (consentInfo.isConsentFormAvailable && consentInfo.status === 'REQUIRED') {
+      await AdMob.showConsentForm();
+    }
+  } catch (error) {
+    console.error('Consent error:', error);
+  }
+};
+
+export const showConsentForm = async () => {
+  if (!isNative()) return;
+  try {
+    await AdMob.showConsentForm();
+  } catch (error) {
+    console.error('Show Consent Form Error:', error);
+  }
 };
 
 export const showBanner = async () => {
   if (!isNative()) return;
 
+  const isProduction = import.meta.env.VITE_ADMOB_PRODUCTION === 'true';
+
   await AdMob.showBanner({
-    adId: 'ca-app-pub-9364231981895017/2923766175',
+    adId: import.meta.env.VITE_ADMOB_BANNER_ID || 'ca-app-pub-9364231981895017/2923766175',
     adSize: BannerAdSize.ADAPTIVE_BANNER,
     position: BannerAdPosition.BOTTOM_CENTER,
     margin: 85, // Positioned safely above the bottom navigation bar
-    isTesting: true 
+    isTesting: !isProduction 
   });
 };
 
@@ -41,10 +63,12 @@ export const hideBanner = async () => {
 export const showRewardedAd = async (): Promise<AdMobRewardItem | null> => {
   if (!isNative()) return null;
 
+  const isProduction = import.meta.env.VITE_ADMOB_PRODUCTION === 'true';
+
   try {
     await AdMob.prepareRewardVideoAd({
-      adId: 'ca-app-pub-9364231981895017/3144105484',
-      isTesting: true // REMOVE FOR PRODUCTION
+      adId: import.meta.env.VITE_ADMOB_REWARD_ID || 'ca-app-pub-9364231981895017/3144105484',
+      isTesting: !isProduction
     });
     
     const reward = await AdMob.showRewardVideoAd();
@@ -58,10 +82,12 @@ export const showRewardedAd = async (): Promise<AdMobRewardItem | null> => {
 export const prepareInterstitial = async () => {
   if (!isNative()) return;
 
+  const isProduction = import.meta.env.VITE_ADMOB_PRODUCTION === 'true';
+
   try {
     await AdMob.prepareInterstitial({
-      adId: 'ca-app-pub-9364231981895017/1460394593',
-      isTesting: true // REMOVE FOR PRODUCTION
+      adId: import.meta.env.VITE_ADMOB_INTERSTITIAL_ID || 'ca-app-pub-9364231981895017/1460394593',
+      isTesting: !isProduction
     });
   } catch (error) {
     console.error('Prepare Interstitial Error:', error);

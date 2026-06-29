@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.spend.wise.com',
+  appId: 'com.adityaproductionspendwise.app',
   appName: 'SpendWise',
   webDir: 'dist',
   server: {

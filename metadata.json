@@ -1,6 +1,7 @@
 {
   "name": "SpendWise",
-  "description": "A modern, minimalist expense tracker with Firebase sync and AI-powered financial insights.",
+  "description": "SpendWise: A lightweight, secure shared expense tracker for roommates and flatmates. Easily split household bills, track balances, and settle debts with a clean and intuitive interface.",
   "requestFramePermissions": [],
-  "androidPackageName": "com.spend.wise.com"
+  "androidPackageName": "com.adityaproductionspendwise.app",
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

@@ -1,4 +1,3 @@
-
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -7,7 +6,7 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    // Helper functions
+    // Auth helpers
     function isSignedIn() {
       return request.auth != null;
     }
@@ -16,33 +15,34 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    function isValidId(id) {
-      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
-    }
-
-    // Allow connection test
+    // Allow connection testing
     match /test/connection {
       allow read: if true;
     }
 
     // User Profile Rules
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read, write: if isOwner(userId);
     }
 
-    // Transactions subcollection - explicit match
-    match /users/{userId}/transactions/{transactionId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+    // SpendWise Groups Rules
+    match /groups/{groupId} {
+      allow read, write: if isSignedIn();
     }
 
-    // Categories subcollection - explicit match
-    match /users/{userId}/categories/{categoryId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+    // Shared Expenses nested under groups
+    match /groups/{groupId}/expenses/{expenseId} {
+      allow read, write: if isSignedIn();
     }
 
-    // Recursive backup for any other user-specific data
-    match /users/{userId}/{allPaths=**} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+    // Shared Settlements nested under groups
+    match /groups/{groupId}/settlements/{settlementId} {
+      allow read, write: if isSignedIn();
+    }
+
+    // Shared Notifications nested under groups
+    match /groups/{groupId}/notifications/{notificationId} {
+      allow read, write: if isSignedIn();
     }
   }
 }

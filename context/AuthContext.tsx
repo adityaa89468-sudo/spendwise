@@ -4,7 +4,10 @@ import {
   onAuthStateChanged, 
   User, 
   signInWithPopup, 
-  signOut as firebaseSignOut 
+  signOut as firebaseSignOut,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  updateProfile
 } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db, googleProvider } from '../lib/firebase';
@@ -15,6 +18,8 @@ interface AuthContextType {
   profile: UserProfile | null;
   loading: boolean;
   signInWithGoogle: () => Promise<void>;
+  signInWithEmail: (email: string, password: string) => Promise<void>;
+  signUpWithEmail: (email: string, password: string, displayName: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -42,8 +47,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 uid: user.uid,
                 email: user.email || '',
                 displayName: user.displayName || '',
-                monthlyBudget: 25000,
-                currency: 'INR',
+                roommateScore: 100,
+                streak: 0,
                 createdAt: new Date().toISOString(),
               };
               await setDoc(profileRef, newProfile);
@@ -56,8 +61,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               uid: user.uid,
               email: user.email || '',
               displayName: user.displayName || '',
-              monthlyBudget: 25000,
-              currency: 'INR',
+              roommateScore: 100,
+              streak: 0,
               createdAt: new Date().toISOString(),
             });
           }
@@ -73,8 +78,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             uid: user.uid,
             email: user.email || '',
             displayName: user.displayName || '',
-            monthlyBudget: 25000,
-            currency: 'INR',
+            roommateScore: 100,
+            streak: 0,
             createdAt: new Date().toISOString(),
           });
         } else {
@@ -92,21 +97,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await signInWithPopup(auth, googleProvider);
     } catch (error: any) {
-      // Handle the specific case where user closes the popup
       if (error.code === 'auth/popup-closed-by-user') {
         console.log("Sign-in cancelled by user (popup closed).");
         return;
       }
-      
-      // Handle other common auth errors
       if (error.code === 'auth/cancelled-by-user') {
         console.log("Sign-in cancelled by user.");
         return;
       }
-
       console.error("Auth Error:", error);
-      // No window.alert in iframe, we rely on console and UI state
     }
+  };
+
+  const signInWithEmail = async (email: string, password: string) => {
+    await signInWithEmailAndPassword(auth, email, password);
+  };
+
+  const signUpWithEmail = async (email: string, password: string, displayName: string) => {
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const registeredUser = userCredential.user;
+    
+    await updateProfile(registeredUser, { displayName });
+    
+    const profileRef = doc(db, 'users', registeredUser.uid);
+    const newProfile: UserProfile = {
+      uid: registeredUser.uid,
+      email: registeredUser.email || '',
+      displayName: displayName || '',
+      roommateScore: 100,
+      streak: 0,
+      createdAt: new Date().toISOString(),
+    };
+    await setDoc(profileRef, newProfile);
+    setProfile(newProfile);
   };
 
   const signOut = async () => {
@@ -114,7 +137,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, signInWithGoogle, signOut }}>
+    <AuthContext.Provider value={{ user, profile, loading, signInWithGoogle, signInWithEmail, signUpWithEmail, signOut }}>
       {children}
     </AuthContext.Provider>
   );

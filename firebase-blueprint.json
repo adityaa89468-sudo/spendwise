@@ -1,57 +1,130 @@
 {
   "entities": {
-    "User": {
-      "title": "User Profile",
-      "description": "User specific settings and budget information",
+    "UserProfile": {
+      "title": "SpendWise User Profile",
+      "description": "User profile with roommate score, streaks, and settings",
       "type": "object",
       "properties": {
+        "uid": { "type": "string" },
         "email": { "type": "string" },
         "displayName": { "type": "string" },
-        "monthlyBudget": { "type": "number", "description": "User set monthly budget" },
-        "currency": { "type": "string", "default": "INR" },
+        "roommateScore": { "type": "number", "default": 100 },
+        "streak": { "type": "number", "default": 0 },
+        "currentGroupId": { "type": "string" },
+        "avatarUrl": { "type": "string" },
+        "upiId": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["email", "createdAt"]
+      "required": ["uid", "email", "createdAt"]
     },
-    "Transaction": {
-      "title": "Financial Transaction",
-      "description": "An expense or income record",
+    "Group": {
+      "title": "Room or Group",
+      "description": "A roommate split expense group, room, or flat",
       "type": "object",
       "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "code": { "type": "string" },
+        "adminId": { "type": "string" },
+        "members": {
+          "type": "array",
+          "description": "Embedded list of members for easy reading"
+        },
+        "inventory": {
+          "type": "array",
+          "description": "Shared room inventory checklist"
+        },
+        "tasks": {
+          "type": "array",
+          "description": "Shared roommate chore tasks list"
+        },
+        "wishlist": {
+          "type": "array",
+          "description": "Shared wishlist for room item requests"
+        },
+        "eventFunds": {
+          "type": "array",
+          "description": "Shared fund pool tracker (e.g. Birthday, Party)"
+        },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "name", "code", "adminId", "createdAt"]
+    },
+    "Expense": {
+      "title": "Room Split Expense",
+      "description": "A payment made by a member to be split among roommates",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
         "amount": { "type": "number" },
-        "type": { "type": "string", "enum": ["income", "expense"] },
+        "payerId": { "type": "string" },
+        "payerName": { "type": "string" },
         "category": { "type": "string" },
         "date": { "type": "string", "format": "date" },
-        "note": { "type": "string" },
+        "splitType": { "type": "string", "enum": ["equal", "percentage", "selected"] },
+        "splits": { "type": "array" },
+        "receiptUrl": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["amount", "type", "category", "date", "createdAt"]
+      "required": ["id", "title", "amount", "payerId", "category", "date", "splitType", "splits", "createdAt"]
     },
-    "Category": {
-      "title": "Transaction Category",
-      "description": "Categorization for transactions",
+    "Settlement": {
+      "title": "Debt Settlement Record",
+      "description": "A record of debt settlement payments checkouts",
       "type": "object",
       "properties": {
-        "name": { "type": "string" },
-        "type": { "type": "string", "enum": ["income", "expense"] },
-        "color": { "type": "string" },
-        "icon": { "type": "string" }
+        "id": { "type": "string" },
+        "amount": { "type": "number" },
+        "fromId": { "type": "string" },
+        "fromName": { "type": "string" },
+        "toId": { "type": "string" },
+        "toName": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "status": { "type": "string", "enum": ["pending", "settled"] },
+        "proofUrl": { "type": "string" },
+        "upiTxnId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["name", "type"]
+      "required": ["id", "amount", "fromId", "toId", "status", "createdAt"]
+    },
+    "AppNotification": {
+      "title": "Room Notification",
+      "description": "Activity feed alert notifications for users",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "groupId": { "type": "string" },
+        "toUid": { "type": "string" },
+        "fromName": { "type": "string" },
+        "text": { "type": "string" },
+        "type": { "type": "string", "enum": ["expense", "settlement", "room"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "read": { "type": "boolean", "default": false }
+      },
+      "required": ["id", "groupId", "toUid", "text", "type", "createdAt", "read"]
     }
   },
   "firestore": {
     "/users/{userId}": {
-      "schema": "User",
-      "description": "Primary user profile document"
+      "schema": "UserProfile",
+      "description": "User specific profile metadata"
     },
-    "/users/{userId}/transactions/{transactionId}": {
-      "schema": "Transaction",
-      "description": "Collection of transactions for a user"
+    "/groups/{groupId}": {
+      "schema": "Group",
+      "description": "Room split group documents"
     },
-    "/users/{userId}/categories/{categoryId}": {
-      "schema": "Category",
-      "description": "Custom categories defined by the user"
+    "/groups/{groupId}/expenses/{expenseId}": {
+      "schema": "Expense",
+      "description": "Expenses under a specific flat group"
+    },
+    "/groups/{groupId}/settlements/{settlementId}": {
+      "schema": "Settlement",
+      "description": "Settlements record for roommate reconciliation"
+    },
+    "/groups/{groupId}/notifications/{notificationId}": {
+      "schema": "AppNotification",
+      "description": "Activity feed notifications for group members"
     }
   }
 }

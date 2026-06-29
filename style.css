@@ -7,12 +7,12 @@
 
 @layer base {
   html, body {
-    @apply h-full overflow-hidden select-none touch-none;
+    @apply min-h-screen select-none;
     -webkit-tap-highlight-color: transparent;
   }
 
   #root {
-    @apply h-full overflow-hidden flex flex-col;
+    @apply min-h-screen flex flex-col;
   }
 
   /* Safe Area Insets for Android/iOS */

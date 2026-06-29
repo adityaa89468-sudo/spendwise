@@ -8,6 +8,7 @@ import {
   LogOut, 
   Clock, 
   ArrowRight, 
+  ArrowLeft, 
   Check, 
   CheckCheck, 
   Bell, 
@@ -36,7 +37,7 @@ import { PullToRefresh } from './components/PullToRefresh';
 import { AppNotification, GroupMember, Expense, Settlement } from './types';
 
 const App: React.FC = () => {
-  const { user, profile, loading, signOut } = useAuth();
+  const { user, profile, loading, signOut, updateUserProfile } = useAuth();
   const { 
     currentGroup, 
     expenses, 
@@ -64,12 +65,27 @@ const App: React.FC = () => {
     return saved ? saved === 'true' : true;
   });
 
+  // Profile Edit states
+  const [editName, setEditName] = useState('');
+  const [editUpi, setEditUpi] = useState('');
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [profileSaveSuccess, setProfileSaveSuccess] = useState(false);
+  const [profileError, setProfileError] = useState('');
+
+  useEffect(() => {
+    if (profile) {
+      setEditName(profile.displayName || '');
+      setEditUpi(profile.upiId || '');
+    }
+  }, [profile]);
+
   // UI operational states
   const [newRoomName, setNewRoomName] = useState('');
   const [joinCodeInput, setJoinCodeInput] = useState('');
   const [isSubmittingRoom, setIsSubmittingRoom] = useState(false);
   const [roomError, setRoomError] = useState('');
   const [roomSuccess, setRoomSuccess] = useState('');
+  const [onboardingChoice, setOnboardingChoice] = useState<'select' | 'create' | 'join'>('select');
 
   // Auto-join from URL invite state
   const [inviteJoinCode, setInviteJoinCode] = useState<string | null>(null);
@@ -262,6 +278,27 @@ const App: React.FC = () => {
     setTimeout(() => setCopiedLink(false), 2000);
   };
 
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editName.trim()) {
+      setProfileError('Display Name cannot be empty');
+      return;
+    }
+    setIsSavingProfile(true);
+    setProfileError('');
+    setProfileSaveSuccess(false);
+    try {
+      await updateUserProfile(editName, editUpi);
+      setProfileSaveSuccess(true);
+      setTimeout(() => setProfileSaveSuccess(false), 3000);
+    } catch (err: any) {
+      console.error(err);
+      setProfileError(err?.message || 'Failed to update profile settings.');
+    } finally {
+      setIsSavingProfile(false);
+    }
+  };
+
   // Pre-calculate user overall net debtor / creditor numbers
   const myNetBalance = user ? (memberBalances[user.uid] || 0) : 0;
 
@@ -300,7 +337,7 @@ const App: React.FC = () => {
   // Logged-in but has no active Room -> Provide invitations & join panel
   if (!currentGroup) {
     return (
-      <div className={`min-h-screen flex flex-col ${darkMode ? 'bg-slate-950 text-white dark' : 'bg-slate-50 text-slate-9x0'}`}>
+      <div className={`min-h-screen flex flex-col ${darkMode ? 'bg-slate-950 text-white dark' : 'bg-slate-50 text-slate-900'}`}>
         
         {/* Subtle decorative background gradients */}
         <div className="absolute top-0 inset-x-0 h-96 bg-gradient-to-b from-indigo-50/50 dark:from-indigo-950/10 to-transparent pointer-events-none" />
@@ -344,105 +381,192 @@ const App: React.FC = () => {
             </p>
           </div>
 
-          {/* Form cards panel */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-3xl mx-auto w-full">
-            
-            {/* Box A: Create Room */}
-            <motion.div 
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-white dark:bg-slate-900 rounded-[2rem] p-8 border border-slate-100 dark:border-slate-800 shadow-xl flex flex-col justify-between"
-            >
-              <div className="space-y-4">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-10 h-10 rounded-2xl bg-indigo-50 dark:bg-indigo-950/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
-                    <Plus className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-black uppercase tracking-wider text-slate-850 dark:text-slate-200">Create Flat Code</h3>
-                    <span className="text-[10px] text-slate-400">Bootstrap a new room for flatmates</span>
-                  </div>
-                </div>
-
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed font-semibold">
-                  Create a private roommate group. You will get a unique join code and shareable invitation links to easily add your roommates.
-                </p>
-
-                <form onSubmit={handleCreateRoom} className="space-y-3 pt-2">
-                  <div>
-                    <label className="block text-[8px] font-black uppercase tracking-widest text-slate-400 mb-1">
-                      Room / Flat Name
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. Flat 302, Green Fields"
-                      value={newRoomName}
-                      onChange={(e) => setNewRoomName(e.target.value)}
-                      className="w-full text-xs font-bold px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-850 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white"
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={isSubmittingRoom}
-                    className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-750 disabled:opacity-50 text-white font-black text-2xs uppercase tracking-widest rounded-xl transition-all cursor-pointer"
-                  >
-                    {isSubmittingRoom ? 'Generating...' : 'Establish Flat'}
-                  </button>
-                </form>
+          {onboardingChoice === 'select' && (
+            <div className="max-w-2xl mx-auto w-full space-y-6">
+              <div className="text-center mb-2">
+                <span className="inline-block px-3 py-1 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded-full text-[9px] font-black uppercase tracking-widest">
+                  Getting Started
+                </span>
+                <h2 className="text-lg font-black text-slate-800 dark:text-slate-200 mt-2 uppercase tracking-wide">
+                  Choose an Option to Continue
+                </h2>
               </div>
-            </motion.div>
 
-            {/* Box B: Join Room */}
-            <motion.div 
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="bg-white dark:bg-slate-900 rounded-[2rem] p-8 border border-slate-100 dark:border-slate-800 shadow-xl flex flex-col justify-between"
-            >
-              <div className="space-y-4">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
-                    <Users className="w-5 h-5" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+                {/* Option 1: Create a Room */}
+                <motion.button
+                  whileHover={{ scale: 1.02, y: -2 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => {
+                    setRoomError('');
+                    setRoomSuccess('');
+                    setOnboardingChoice('create');
+                  }}
+                  className="bg-white dark:bg-slate-900 rounded-[2rem] p-8 border border-slate-100 dark:border-slate-800 shadow-xl flex flex-col items-start text-left cursor-pointer transition-all group"
+                >
+                  <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400 mb-6 group-hover:bg-indigo-600 group-hover:text-white transition-all">
+                    <Plus className="w-6 h-6" />
                   </div>
-                  <div>
-                    <h3 className="text-sm font-black uppercase tracking-wider text-slate-850 dark:text-slate-200">Join Roommate Flat</h3>
-                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider text-emerald-600">Enter Invite Code</span>
+                  <h3 className="text-sm font-black uppercase tracking-wider text-slate-850 dark:text-slate-200 mb-2">
+                    Create a New Room
+                  </h3>
+                  <p className="text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-4 text-indigo-600 dark:text-indigo-400">
+                    Bootstrap flat code
+                  </p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed font-semibold">
+                    Set up a brand new roommate group. You will get a unique join code and invitations to easily add your roommates.
+                  </p>
+                  <div className="mt-6 inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+                    <span>Create Room</span>
+                    <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-all" />
                   </div>
-                </div>
+                </motion.button>
 
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed font-semibold">
-                  Belong to an ongoing flat configuration? Input the 6-digit invitation access key shared by your flatmates to synchronize with them.
-                </p>
-
-                <div className="space-y-3 pt-2">
-                  <div>
-                    <label className="block text-[8px] font-black uppercase tracking-widest text-slate-400 mb-1">
-                      6-Digit Code
-                    </label>
-                    <input
-                      type="text"
-                      maxLength={6}
-                      placeholder="e.g. 564903"
-                      value={joinCodeInput}
-                      onChange={(e) => setJoinCodeInput(e.target.value)}
-                      className="w-full text-center text-sm font-extrabold px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-850 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white uppercase tracking-widest"
-                    />
+                {/* Option 2: Join an Existing Room */}
+                <motion.button
+                  whileHover={{ scale: 1.02, y: -2 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => {
+                    setRoomError('');
+                    setRoomSuccess('');
+                    setOnboardingChoice('join');
+                  }}
+                  className="bg-white dark:bg-slate-900 rounded-[2rem] p-8 border border-slate-100 dark:border-slate-800 shadow-xl flex flex-col items-start text-left cursor-pointer transition-all group"
+                >
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 flex items-center justify-center text-emerald-600 dark:text-emerald-400 mb-6 group-hover:bg-emerald-600 group-hover:text-white transition-all">
+                    <Users className="w-6 h-6" />
                   </div>
-
-                  <button
-                    onClick={() => handleJoinRoom(joinCodeInput)}
-                    disabled={isSubmittingRoom || joinCodeInput.trim().length !== 6}
-                    className="w-full py-3.5 bg-slate-900 hover:bg-black dark:bg-slate-800 dark:hover:bg-slate-700 disabled:opacity-50 text-white font-black text-2xs uppercase tracking-widest rounded-xl transition-all cursor-pointer"
-                  >
-                    {isSubmittingRoom ? 'Verifying Room...' : 'Join Flat'}
-                  </button>
-                </div>
+                  <h3 className="text-sm font-black uppercase tracking-wider text-slate-850 dark:text-slate-200 mb-2">
+                    Join Roommate Flat
+                  </h3>
+                  <p className="text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-4 text-emerald-600 dark:text-emerald-400">
+                    Use Invite Code
+                  </p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed font-semibold">
+                    Belong to an ongoing flat configuration? Input the 6-digit invitation access key shared by your flatmates to synchronize with them.
+                  </p>
+                  <div className="mt-6 inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                    <span>Join Room</span>
+                    <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-all" />
+                  </div>
+                </motion.button>
               </div>
-            </motion.div>
+            </div>
+          )}
 
-          </div>
+          {onboardingChoice === 'create' && (
+            <div className="max-w-md mx-auto w-full">
+              <button 
+                onClick={() => setOnboardingChoice('select')}
+                className="inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400 hover:opacity-80 mb-6 transition-all"
+              >
+                <ArrowLeft className="w-4 h-4" /> Back to options
+              </button>
+
+              <motion.div 
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white dark:bg-slate-900 rounded-[2rem] p-8 border border-slate-100 dark:border-slate-800 shadow-xl"
+              >
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-10 h-10 rounded-2xl bg-indigo-50 dark:bg-indigo-950/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                      <Plus className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-black uppercase tracking-wider text-slate-850 dark:text-slate-200">Create Flat Code</h3>
+                      <span className="text-[10px] text-slate-400">Bootstrap a new room for flatmates</span>
+                    </div>
+                  </div>
+
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed font-semibold">
+                    Create a private roommate group. You will get a unique join code and shareable invitation links to easily add your roommates.
+                  </p>
+
+                  <form onSubmit={handleCreateRoom} className="space-y-3 pt-2">
+                    <div>
+                      <label className="block text-[8px] font-black uppercase tracking-widest text-slate-400 mb-1">
+                        Room / Flat Name
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. Flat 302, Green Fields"
+                        value={newRoomName}
+                        onChange={(e) => setNewRoomName(e.target.value)}
+                        className="w-full text-xs font-bold px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-850 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white"
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={isSubmittingRoom}
+                      className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-750 disabled:opacity-50 text-white font-black text-2xs uppercase tracking-widest rounded-xl transition-all cursor-pointer"
+                    >
+                      {isSubmittingRoom ? 'Generating...' : 'Establish Flat'}
+                    </button>
+                  </form>
+                </div>
+              </motion.div>
+            </div>
+          )}
+
+          {onboardingChoice === 'join' && (
+            <div className="max-w-md mx-auto w-full">
+              <button 
+                onClick={() => setOnboardingChoice('select')}
+                className="inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400 hover:opacity-80 mb-6 transition-all"
+              >
+                <ArrowLeft className="w-4 h-4" /> Back to options
+              </button>
+
+              <motion.div 
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white dark:bg-slate-900 rounded-[2rem] p-8 border border-slate-100 dark:border-slate-800 shadow-xl"
+              >
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                      <Users className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-black uppercase tracking-wider text-slate-850 dark:text-slate-200">Join Roommate Flat</h3>
+                      <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider text-emerald-600">Enter Invite Code</span>
+                    </div>
+                  </div>
+
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed font-semibold">
+                    Belong to an ongoing flat configuration? Input the 6-digit invitation access key shared by your flatmates to synchronize with them.
+                  </p>
+
+                  <div className="space-y-3 pt-2">
+                    <div>
+                      <label className="block text-[8px] font-black uppercase tracking-widest text-slate-400 mb-1">
+                        6-Digit Code
+                      </label>
+                      <input
+                        type="text"
+                        maxLength={6}
+                        placeholder="e.g. 564903"
+                        value={joinCodeInput}
+                        onChange={(e) => setJoinCodeInput(e.target.value)}
+                        className="w-full text-center text-sm font-extrabold px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-850 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white uppercase tracking-widest"
+                      />
+                    </div>
+
+                    <button
+                      onClick={() => handleJoinRoom(joinCodeInput)}
+                      disabled={isSubmittingRoom || joinCodeInput.trim().length !== 6}
+                      className="w-full py-3.5 bg-slate-900 hover:bg-black dark:bg-slate-800 dark:hover:bg-slate-700 disabled:opacity-50 text-white font-black text-2xs uppercase tracking-widest rounded-xl transition-all cursor-pointer"
+                    >
+                      {isSubmittingRoom ? 'Verifying Room...' : 'Join Flat'}
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          )}
 
           {/* Messages display */}
           <div className="max-w-md mx-auto mt-6 text-center">
@@ -632,7 +756,7 @@ const App: React.FC = () => {
             { id: 'split', name: '+ Split Bill' },
             { id: 'settle', name: 'Settle Debts' },
             { id: 'history', name: 'History Logs' },
-            { id: 'room', name: 'Room & Invites' },
+            { id: 'room', name: 'My Profile & Room' },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -1277,6 +1401,80 @@ const App: React.FC = () => {
               animate={{ opacity: 1, scale: 1 }}
               className="max-w-xl mx-auto space-y-6"
             >
+              {/* My Roommate Profile Settings Card */}
+              <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-6 md:p-8 border border-slate-100 dark:border-slate-800 shadow-xl space-y-6">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="text-base font-black text-slate-900 dark:text-white uppercase tracking-wider">
+                      My Roommate Profile
+                    </h3>
+                    <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mt-0.5 text-indigo-650 dark:text-indigo-400">
+                      Edit details other roommates can see
+                    </p>
+                  </div>
+                  <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-650 dark:text-indigo-400 flex items-center justify-center font-bold text-xs shrink-0 border border-indigo-100 dark:border-indigo-900">
+                    {profile?.displayName?.charAt(1) ? profile.displayName.substring(0, 2).toUpperCase() : profile?.displayName?.charAt(0).toUpperCase() || 'RM'}
+                  </div>
+                </div>
+
+                <form onSubmit={handleSaveProfile} className="space-y-4">
+                  {profileError && (
+                    <div className="p-3 bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 text-3xs font-black uppercase tracking-wider rounded-xl border border-rose-100 dark:border-rose-900/40 text-left">
+                      ⚠️ {profileError}
+                    </div>
+                  )}
+
+                  {profileSaveSuccess && (
+                    <div className="p-3 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 text-3xs font-black uppercase tracking-wider rounded-xl border border-emerald-100 dark:border-emerald-900/40 flex items-center gap-2 text-left">
+                      <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" /> 
+                      <span>Profile updated! Roommates see your new name immediately.</span>
+                    </div>
+                  )}
+
+                  <div className="space-y-1.5 text-left">
+                    <label className="block text-[9px] font-extrabold uppercase tracking-widest text-slate-400">
+                      My Name / Alias (Roommates see this)
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      placeholder="e.g. Aditya, John, Sarah"
+                      className="w-full px-4 py-3 text-xs bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-white font-extrabold rounded-xl border border-slate-100 dark:border-slate-850 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5 text-left">
+                    <label className="block text-[9px] font-extrabold uppercase tracking-widest text-slate-400 flex items-center justify-between">
+                      <span>UPI ID / Payment Link (Optional)</span>
+                      <span className="text-[7.5px] font-bold text-indigo-500">Generates Easy Pay QR Codes!</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={editUpi}
+                      onChange={(e) => setEditUpi(e.target.value)}
+                      placeholder="e.g. aditya@okaxis or GooglePay link"
+                      className="w-full px-4 py-3 text-xs bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-white font-extrabold rounded-xl border border-slate-100 dark:border-slate-850 focus:outline-none focus:ring-2 focus:ring-indigo-550 transition-all"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isSavingProfile}
+                    className="w-full py-3.5 bg-slate-900 dark:bg-slate-800 hover:opacity-90 disabled:opacity-50 text-white rounded-xl text-3xs font-black uppercase tracking-widest flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
+                  >
+                    {isSavingProfile ? (
+                      'Saving Changes...'
+                    ) : (
+                      <>
+                        Save Profile Settings
+                      </>
+                    )}
+                  </button>
+                </form>
+              </div>
+
               {/* Room card box */}
               <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-6 md:p-8 border border-slate-100 dark:border-slate-800 shadow-xl space-y-6">
                 
@@ -1432,7 +1630,7 @@ const App: React.FC = () => {
             { id: 'split', name: 'Split Bill', icon: Plus },
             { id: 'settle', name: 'Settle', icon: CheckCheck },
             { id: 'history', name: 'History', icon: Clock },
-            { id: 'room', name: 'Room', icon: Users },
+            { id: 'room', name: 'Profile', icon: User },
           ].map((tab) => {
             const IconComponent = tab.icon;
             const isActive = activeTab === tab.id;

@@ -21,6 +21,7 @@ interface AuthContextType {
   signInWithEmail: (email: string, password: string) => Promise<void>;
   signUpWithEmail: (email: string, password: string, displayName: string) => Promise<void>;
   signOut: () => Promise<void>;
+  updateUserProfile: (displayName: string, upiId?: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -137,8 +138,50 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await firebaseSignOut(auth);
   };
 
+  const updateUserProfile = async (displayName: string, upiId?: string) => {
+    if (!user) throw new Error("No authenticated user found.");
+    
+    // 1. Update Firebase auth profile
+    await updateProfile(user, { displayName });
+    
+    // 2. Update Firestore user document
+    const profileRef = doc(db, 'users', user.uid);
+    const updatedData: Partial<UserProfile> = {
+      displayName: displayName.trim(),
+    };
+    if (upiId !== undefined) {
+      updatedData.upiId = upiId.trim();
+    }
+    await setDoc(profileRef, updatedData, { merge: true });
+    
+    // 3. Update local React state
+    if (profile) {
+      setProfile({
+        ...profile,
+        displayName: displayName.trim(),
+        ...(upiId !== undefined ? { upiId: upiId.trim() } : {}),
+      });
+    }
+
+    // 4. Update the user's name inside the members array of their current group
+    if (profile?.currentGroupId) {
+      const groupRef = doc(db, 'groups', profile.currentGroupId);
+      const groupSnap = await getDoc(groupRef);
+      if (groupSnap.exists()) {
+        const groupData = groupSnap.data();
+        const updatedMembers = (groupData.members || []).map((m: any) => {
+          if (m.uid === user.uid) {
+            return { ...m, displayName: displayName.trim() };
+          }
+          return m;
+        });
+        await setDoc(groupRef, { members: updatedMembers }, { merge: true });
+      }
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, profile, loading, signInWithGoogle, signInWithEmail, signUpWithEmail, signOut }}>
+    <AuthContext.Provider value={{ user, profile, loading, signInWithGoogle, signInWithEmail, signUpWithEmail, signOut, updateUserProfile }}>
       {children}
     </AuthContext.Provider>
   );

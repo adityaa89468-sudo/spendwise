@@ -26,6 +26,31 @@ export interface SupabaseUser {
   displayName: string | null;
 }
 
+enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+const handleFirestoreError = (error: unknown, operationType: OperationType, path: string | null) => {
+  const errInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    operationType,
+    path,
+    authInfo: {
+      userId: auth.currentUser?.uid,
+      email: auth.currentUser?.email,
+      emailVerified: auth.currentUser?.emailVerified,
+      isAnonymous: auth.currentUser?.isAnonymous,
+    }
+  };
+  console.error('Firestore Error:', JSON.stringify(errInfo));
+  throw new Error(JSON.stringify(errInfo));
+};
+
 interface AuthContextType {
   user: SupabaseUser | null;
   profile: UserProfile | null;
@@ -119,6 +144,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
           }, (err) => {
             console.error("Profile snapshot listener error:", err);
+            handleFirestoreError(err, OperationType.GET, 'users/' + mappedUser.uid);
           });
         } else {
           setUser(null);

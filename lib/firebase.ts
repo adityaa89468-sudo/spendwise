@@ -19,10 +19,11 @@ const app = initializeApp(firebaseConfig);
 
 // Initialize Firestore with standard settings and persistent cache
 // We use the default transport (WebSockets) first, as forced long-polling can sometimes timeout in this environment.
+const configAny = firebaseConfig as any;
 export const db = initializeFirestore(app, {
   localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
-}, firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDatabaseId !== '(default)' 
-  ? firebaseConfig.firestoreDatabaseId 
+}, configAny.firestoreDatabaseId && configAny.firestoreDatabaseId !== '(default)' 
+  ? configAny.firestoreDatabaseId 
   : undefined
 );
 

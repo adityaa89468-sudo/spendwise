@@ -1,10 +1,10 @@
 {
   "projectId": "tasky-alarm",
-  "appId": "1:733361691954:web:111de1933854c4da81cb2b",
+  "appId": "1:733361691954:web:f91eb3b721b41bd881cb2b",
   "apiKey": "AIzaSyDed3MOx23NxG_iNQXU65cmBFUf2qPp7v0",
   "authDomain": "tasky-alarm.firebaseapp.com",
-  "firestoreDatabaseId": "ai-studio-916927bb-23df-45c3-a272-025dd910d1f3",
   "storageBucket": "tasky-alarm.firebasestorage.app",
   "messagingSenderId": "733361691954",
-  "measurementId": ""
+  "measurementId": "",
+  "firestoreDatabaseId": "ai-studio-916927bb-23df-45c3-a272-025dd910d1f3"
 }

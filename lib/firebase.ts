@@ -7,7 +7,6 @@ import {
   setPersistence 
 } from 'firebase/auth';
 import { 
-  getFirestore, 
   doc, 
   getDocFromServer, 
   initializeFirestore,
@@ -30,12 +29,12 @@ export const db = initializeFirestore(app, {
 export const auth = getAuth(app);
 
 // Enable local persistence for persistent login across app restarts
-// This ensures that 'onAuthStateChanged' can restore the user session immediately
 setPersistence(auth, browserLocalPersistence).catch((err) => {
   console.error("Firebase Persistence Error:", err);
 });
 
 export const googleProvider = new GoogleAuthProvider();
+
 
 // Test connection silently - move to a more resilient approach
 async function testConnection() {

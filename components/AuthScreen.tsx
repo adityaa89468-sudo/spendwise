@@ -22,7 +22,7 @@ interface AuthScreenProps {
 }
 
 const AuthScreen: React.FC<AuthScreenProps> = ({ darkMode, setDarkMode }) => {
-  const { signInWithGoogle, signInWithEmail, signUpWithEmail } = useAuth();
+  const { signInWithGoogleDirect, signInWithEmail, signUpWithEmail } = useAuth();
   
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
   const [email, setEmail] = useState('');
@@ -36,6 +36,8 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ darkMode, setDarkMode }) => {
   // Friendly error translations for Play Store production polish:
   const getFriendlyError = (err: any): string => {
     const code = err?.code || '';
+    const message = err?.message || err?.msg || (typeof err === 'string' ? err : '');
+
     switch (code) {
       case 'auth/invalid-email':
         return 'Please enter a valid email address.';
@@ -54,7 +56,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ darkMode, setDarkMode }) => {
       case 'auth/network-request-failed':
         return 'Network connection error. Check your internet connectivity.';
       default:
-        return err?.message || 'Authentication failed. Please try again.';
+        return message || 'Authentication failed. Please try again.';
     }
   };
 
@@ -100,9 +102,14 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ darkMode, setDarkMode }) => {
     setErrorMsg('');
     setIsSubmitting(true);
     try {
-      await signInWithGoogle();
+      await signInWithGoogleDirect();
     } catch (err: any) {
-      if (err?.code === 'auth/popup-closed-by-user' || err?.code === 'auth/cancelled-by-user') {
+      if (
+        err?.code === 'auth/popup-closed-by-user' || 
+        err?.code === 'auth/cancelled-by-user' || 
+        err?.message?.includes('closed') ||
+        err?.message?.includes('cancel')
+      ) {
         setIsSubmitting(false);
         return;
       }

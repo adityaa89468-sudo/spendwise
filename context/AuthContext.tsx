@@ -1,25 +1,38 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { 
   onAuthStateChanged, 
   User, 
   signInWithPopup, 
-  signInWithRedirect,
-  getRedirectResult,
   signOut as firebaseSignOut,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
-  updateProfile
+  updateProfile,
+  signInWithCredential,
+  GoogleAuthProvider
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 import { auth, db, googleProvider } from '../lib/firebase';
 import { UserProfile } from '../types';
 
+declare global {
+  interface Window {
+    google?: any;
+  }
+}
+
+export interface SupabaseUser {
+  uid: string;
+  email: string | null;
+  displayName: string | null;
+}
+
 interface AuthContextType {
-  user: User | null;
+  user: SupabaseUser | null;
   profile: UserProfile | null;
   loading: boolean;
   signInWithGoogle: () => Promise<void>;
+  signInWithGoogleDirect: () => Promise<void>;
+  initializeGoogleBtn: (containerId: string) => void;
   signInWithEmail: (email: string, password: string) => Promise<void>;
   signUpWithEmail: (email: string, password: string, displayName: string) => Promise<void>;
   signOut: () => Promise<void>;
@@ -29,32 +42,54 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<SupabaseUser | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Dynamically load Google Identity Services Client SDK
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    document.body.appendChild(script);
+    return () => {
+      // Clean up script on unmount safely
+      if (document.body.contains(script)) {
+        document.body.removeChild(script);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     let unsubscribeProfile: (() => void) | null = null;
 
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    // Listen for Firebase Auth state changes
+    const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
       try {
-        setUser(user);
-        if (unsubscribeProfile) {
-          unsubscribeProfile();
-          unsubscribeProfile = null;
-        }
+        if (firebaseUser) {
+          const mappedUser: SupabaseUser = {
+            uid: firebaseUser.uid,
+            email: firebaseUser.email,
+            displayName: firebaseUser.displayName,
+          };
+          setUser(mappedUser);
 
-        if (user) {
-          // Fetch or create profile
-          const profileRef = doc(db, 'users', user.uid);
+          if (unsubscribeProfile) {
+            unsubscribeProfile();
+            unsubscribeProfile = null;
+          }
+
+          // Fetch or create profile inside our Firestore database
+          const profileRef = doc(db, 'users', mappedUser.uid);
           
           try {
             const profileSnap = await getDoc(profileRef);
             if (!profileSnap.exists()) {
               const newProfile: UserProfile = {
-                uid: user.uid,
-                email: user.email || '',
-                displayName: user.displayName || '',
+                uid: mappedUser.uid,
+                email: mappedUser.email || '',
+                displayName: mappedUser.displayName || '',
                 roommateScore: 100,
                 streak: 0,
                 createdAt: new Date().toISOString(),
@@ -68,16 +103,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             console.warn("Retrying profile fetch locally due to:", profileError.message);
             // Fallback to local profile if Firestore is unavailable/permissions issues occur during boot
             setProfile({
-              uid: user.uid,
-              email: user.email || '',
-              displayName: user.displayName || '',
+              uid: mappedUser.uid,
+              email: mappedUser.email || '',
+              displayName: mappedUser.displayName || '',
               roommateScore: 100,
               streak: 0,
               createdAt: new Date().toISOString(),
             });
           }
 
-          // Realtime listener
+          // Realtime listener for the Firestore user document
           unsubscribeProfile = onSnapshot(profileRef, (snapshot) => {
             if (snapshot.exists()) {
               setProfile(snapshot.data() as UserProfile);
@@ -86,80 +121,120 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             console.error("Profile snapshot listener error:", err);
           });
         } else {
+          setUser(null);
           setProfile(null);
+          if (unsubscribeProfile) {
+            unsubscribeProfile();
+            unsubscribeProfile = null;
+          }
         }
       } catch (error: any) {
         console.error("Auth Profile Error:", error);
-        
-        // If we are offline and doc is not in cache, fallback to a basic profile
-        if (user && (error.message?.includes('offline') || error.code === 'unavailable')) {
-          setProfile({
-            uid: user.uid,
-            email: user.email || '',
-            displayName: user.displayName || '',
-            roommateScore: 100,
-            streak: 0,
-            createdAt: new Date().toISOString(),
-          });
-        } else {
-          setProfile(null);
-        }
       } finally {
         setLoading(false);
       }
     });
 
     return () => {
-      unsubscribe();
+      unsubscribeAuth();
       if (unsubscribeProfile) unsubscribeProfile();
     };
   }, []);
 
-  useEffect(() => {
-    // Process redirect result if any (crucial on mobile devices)
-    getRedirectResult(auth)
-      .then((result) => {
-        if (result?.user) {
-          console.log("Redirect sign-in successful:", result.user);
-        }
-      })
-      .catch((error) => {
-        console.error("Redirect sign-in error:", error);
-      });
-  }, []);
-
   const signInWithGoogle = async () => {
     try {
-      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-        navigator.userAgent
-      );
-      
-      if (isMobile) {
-        await signInWithRedirect(auth, googleProvider);
-      } else {
-        await signInWithPopup(auth, googleProvider);
-      }
+      // Use standard popup sign in which works seamlessly on mobile and desktop
+      await signInWithPopup(auth, googleProvider);
     } catch (error: any) {
-      if (error.code === 'auth/popup-blocked') {
-        console.warn("Popup blocked. Falling back to redirect sign-in...");
-        try {
-          await signInWithRedirect(auth, googleProvider);
-          return;
-        } catch (redirectError) {
-          console.error("Redirect auth fallback error:", redirectError);
-          throw redirectError;
-        }
-      }
       if (error.code === 'auth/popup-closed-by-user') {
-        console.log("Sign-in cancelled by user (popup closed).");
-        throw error;
-      }
-      if (error.code === 'auth/cancelled-by-user') {
         console.log("Sign-in cancelled by user.");
-        throw error;
+        return;
       }
       console.error("Auth Error:", error);
       throw error;
+    }
+  };
+
+  const signInWithGoogleDirect = async () => {
+    const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    if (!googleClientId) {
+      console.warn("Direct Google Login: VITE_GOOGLE_CLIENT_ID is not configured. Falling back to default auth popup.");
+      await signInWithGoogle();
+      return;
+    }
+
+    return new Promise<void>((resolve, reject) => {
+      if (window.google?.accounts?.oauth2) {
+        try {
+          const client = window.google.accounts.oauth2.initTokenClient({
+            client_id: googleClientId,
+            scope: 'openid email profile',
+            callback: async (tokenResponse: any) => {
+              if (tokenResponse?.error) {
+                reject(new Error(tokenResponse.error_description || tokenResponse.error));
+                return;
+              }
+              if (tokenResponse?.access_token) {
+                try {
+                  setLoading(true);
+                  const credential = GoogleAuthProvider.credential(null, tokenResponse.access_token);
+                  await signInWithCredential(auth, credential);
+                  resolve();
+                } catch (fbError) {
+                  reject(fbError);
+                } finally {
+                  setLoading(false);
+                }
+              } else {
+                reject(new Error("No access token received from Google."));
+              }
+            }
+          });
+          client.requestAccessToken();
+        } catch (err) {
+          reject(err);
+        }
+      } else {
+        signInWithGoogle().then(() => resolve()).catch(reject);
+      }
+    });
+  };
+
+  const initializeGoogleBtn = (containerId: string) => {
+    const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    if (!googleClientId) {
+      console.info("Direct Google Sign-In Button: VITE_GOOGLE_CLIENT_ID is not configured yet.");
+      return;
+    }
+
+    if (window.google?.accounts?.id) {
+      try {
+        window.google.accounts.id.initialize({
+          client_id: googleClientId,
+          callback: async (response: any) => {
+            const idToken = response.credential;
+            try {
+              setLoading(true);
+              const credential = GoogleAuthProvider.credential(idToken);
+              await signInWithCredential(auth, credential);
+            } catch (error) {
+              console.error("Firebase Sign-In with GIS Credential Error:", error);
+            } finally {
+              setLoading(false);
+            }
+          }
+        });
+
+        const btnElement = document.getElementById(containerId);
+        if (btnElement) {
+          window.google.accounts.id.renderButton(
+            btnElement,
+            { theme: "outline", size: "large", width: btnElement.clientWidth || 320 }
+          );
+        }
+      } catch (err) {
+        console.error("GIS Button Render Error:", err);
+      }
     }
   };
 
@@ -169,21 +244,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signUpWithEmail = async (email: string, password: string, displayName: string) => {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    const registeredUser = userCredential.user;
-    
-    await updateProfile(registeredUser, { displayName });
-    
-    const profileRef = doc(db, 'users', registeredUser.uid);
-    const newProfile: UserProfile = {
-      uid: registeredUser.uid,
-      email: registeredUser.email || '',
-      displayName: displayName || '',
-      roommateScore: 100,
-      streak: 0,
-      createdAt: new Date().toISOString(),
-    };
-    await setDoc(profileRef, newProfile);
-    setProfile(newProfile);
+    if (userCredential.user) {
+      await updateProfile(userCredential.user, { displayName });
+      
+      const registeredUser = {
+        uid: userCredential.user.uid,
+        email: userCredential.user.email,
+        displayName: displayName,
+      };
+
+      // Keep Firestore profile persistence in sync
+      const profileRef = doc(db, 'users', registeredUser.uid);
+      const newProfile: UserProfile = {
+        uid: registeredUser.uid,
+        email: registeredUser.email || '',
+        displayName: displayName || '',
+        roommateScore: 100,
+        streak: 0,
+        createdAt: new Date().toISOString(),
+      };
+      await setDoc(profileRef, newProfile);
+      setProfile(newProfile);
+    }
   };
 
   const signOut = async () => {
@@ -191,10 +273,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const updateUserProfile = async (displayName: string, upiId?: string) => {
-    if (!user) throw new Error("No authenticated user found.");
+    if (!auth.currentUser || !user) throw new Error("No authenticated user found.");
     
     // 1. Update Firebase auth profile
-    await updateProfile(user, { displayName });
+    await updateProfile(auth.currentUser, { displayName: displayName.trim() });
     
     // 2. Update Firestore user document
     const profileRef = doc(db, 'users', user.uid);
@@ -233,7 +315,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, signInWithGoogle, signInWithEmail, signUpWithEmail, signOut, updateUserProfile }}>
+    <AuthContext.Provider value={{ user, profile, loading, signInWithGoogle, signInWithGoogleDirect, initializeGoogleBtn, signInWithEmail, signUpWithEmail, signOut, updateUserProfile }}>
       {children}
     </AuthContext.Provider>
   );

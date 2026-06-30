@@ -22,6 +22,7 @@ const app = initializeApp(firebaseConfig);
 const configAny = firebaseConfig as any;
 export const db = initializeFirestore(app, {
   localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
+  experimentalAutoDetectLongPolling: true,
 }, configAny.firestoreDatabaseId && configAny.firestoreDatabaseId !== '(default)' 
   ? configAny.firestoreDatabaseId 
   : undefined

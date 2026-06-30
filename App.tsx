@@ -1680,8 +1680,9 @@ const App: React.FC = () => {
       </main>
 
       {/* Global Bottom Sticky Info Bar */}
-      <footer className="pt-6 pb-28 border-t border-slate-100 dark:border-slate-900 bg-white/40 dark:bg-slate-950/40 relative z-10 text-center text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-        SpendWise Shared Expense Tracker
+      <footer className="pt-6 pb-28 border-t border-slate-100 dark:border-slate-900 bg-white/40 dark:bg-slate-950/40 relative z-10 text-center text-[10px] text-slate-400 font-bold uppercase tracking-wider flex flex-col items-center justify-center gap-1">
+        <span>SpendWise Shared Expense Tracker</span>
+        <span className="text-[9px] text-slate-400/60 normal-case font-medium">Version 1.0.001</span>
       </footer>
 
       {/* Floating Bottom Sticky Navigation Toolbar */}

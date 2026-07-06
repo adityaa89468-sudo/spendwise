@@ -35,6 +35,7 @@ import PrivacyPolicy from './components/PrivacyPolicy';
 import TermsConditions from './components/TermsConditions';
 import { PullToRefresh } from './components/PullToRefresh';
 import { AppNotification, GroupMember, Expense, Settlement } from './types';
+import { SpendWiseLogo } from './components/SpendWiseLogo';
 
 const App: React.FC = () => {
   const { user, profile, loading, signOut, updateUserProfile } = useAuth();
@@ -112,6 +113,40 @@ const App: React.FC = () => {
   // Notification panel drawer
   const [showNotifications, setShowNotifications] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+
+  // Active toast notification state for real-time split alerts
+  const [activeToast, setActiveToast] = useState<any | null>(null);
+  const [prevNotifications, setPrevNotifications] = useState<any[]>([]);
+
+  // Listen for newly added notifications to trigger high-fidelity real-time in-app toast alerts
+  useEffect(() => {
+    if (!user || notifications.length === 0) {
+      setPrevNotifications(notifications);
+      return;
+    }
+
+    // Only process if we already have a previous list of notifications to compare with
+    if (prevNotifications.length > 0) {
+      const unread = notifications.filter(n => !n.read);
+      if (unread.length > 0) {
+        // Find if there is a notification in the new list that wasn't in the previous list
+        const brandNew = unread.find(n => !prevNotifications.some(p => p.id === n.id));
+        if (brandNew) {
+          // Double check if it's very recent (created in the last 60 seconds)
+          const isRecent = (new Date().getTime() - new Date(brandNew.createdAt).getTime()) < 60000;
+          if (isRecent) {
+            setActiveToast(brandNew);
+            // Auto-dismiss after 6 seconds
+            const timer = setTimeout(() => {
+              setActiveToast(null);
+            }, 6000);
+            return () => clearTimeout(timer);
+          }
+        }
+      }
+    }
+    setPrevNotifications(notifications);
+  }, [notifications, user]);
 
   // Sync dark class on mount and mode changes
   useEffect(() => {
@@ -246,12 +281,23 @@ const App: React.FC = () => {
       // Reset form states elegantly
       setExpenseTitle('');
       setExpenseAmount('');
-      setExpenseSuccess('Expense added and split notifications sent out!');
+      
+      // Construct a highly detailed confirmation of roommates who got notified
+      const notifiedList = splits
+        .filter(s => s.uid !== payerId)
+        .map(s => `${s.displayName} (₹${Math.round(s.amount)})`)
+        .join(', ');
+        
+      const successMsg = notifiedList 
+        ? `Expense of ₹${Math.round(parsedAmount)} added! Real-time notifications sent to: ${notifiedList}.`
+        : `Expense of ₹${Math.round(parsedAmount)} added! Split saved successfully.`;
+
+      setExpenseSuccess(successMsg);
       // Back to dashboard
       setTimeout(() => {
         setExpenseSuccess('');
         setActiveTab('dashboard');
-      }, 1500);
+      }, 3500);
     } catch (err: any) {
       setExpenseError('Failed to save expense splits. Check permissions.');
     } finally {
@@ -349,8 +395,8 @@ const App: React.FC = () => {
         {/* Global Nav for onboarding */}
         <header className="py-6 px-6 max-w-4xl w-full mx-auto flex justify-between items-center relative z-25">
           <div className="flex items-center gap-2">
-            <div className="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center">
-              <Coins className="w-5 h-5 text-white" />
+            <div className="w-9 h-9 bg-slate-100 dark:bg-slate-900 rounded-xl flex items-center justify-center shadow-sm">
+              <SpendWiseLogo variant="icon" className="w-7 h-7" darkMode={darkMode} />
             </div>
             <div>
               <h2 className="font-extrabold text-sm text-slate-900 dark:text-white leading-none">SpendWise</h2>
@@ -639,6 +685,58 @@ const App: React.FC = () => {
   return (
     <div className={`min-h-screen flex flex-col ${darkMode ? 'bg-slate-950 text-white dark' : 'bg-slate-50 text-slate-900'}`}>
       
+      {/* Real-time In-App Toast Alert */}
+      <AnimatePresence>
+        {activeToast && (
+          <motion.div
+            initial={{ opacity: 0, y: -50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.9 }}
+            className="fixed top-6 left-1/2 -translate-x-1/2 z-50 w-full max-w-sm px-4 pointer-events-auto"
+          >
+            <div className="bg-slate-900 text-white dark:bg-white dark:text-slate-950 p-4 rounded-2xl shadow-2xl border border-slate-850 dark:border-slate-150 flex items-start gap-3.5 relative">
+              <div className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center text-white shrink-0 mt-0.5 animate-bounce">
+                <Bell className="w-4 h-4" />
+              </div>
+              <div className="flex-1 space-y-1 text-left">
+                <p className="text-[9px] font-black uppercase tracking-widest text-indigo-400 dark:text-indigo-600 leading-none">
+                  New Split Alert
+                </p>
+                <p className="text-[11px] font-bold leading-relaxed">
+                  {activeToast.text}
+                </p>
+                <div className="flex gap-2 pt-1.5">
+                  <button
+                    onClick={() => {
+                      setActiveTab('settle');
+                      setActiveToast(null);
+                    }}
+                    className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-750 text-white rounded-lg text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer active:scale-95"
+                  >
+                    Settle Up
+                  </button>
+                  <button
+                    onClick={async () => {
+                      await markNotificationRead(activeToast.id);
+                      setActiveToast(null);
+                    }}
+                    className="px-2.5 py-1 bg-slate-800 text-slate-300 hover:bg-slate-700 dark:bg-slate-100 dark:text-slate-600 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer active:scale-95"
+                  >
+                    Got It
+                  </button>
+                </div>
+              </div>
+              <button
+                onClick={() => setActiveToast(null)}
+                className="absolute top-3 right-3 text-slate-400 hover:text-slate-200 dark:hover:text-slate-600 cursor-pointer p-1"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Decorative top ambient block */}
       <div className="absolute top-0 inset-x-0 h-40 bg-gradient-to-b from-indigo-50/40 dark:from-indigo-950/5 to-transparent pointer-events-none" />
 
@@ -646,8 +744,8 @@ const App: React.FC = () => {
       <header className="sticky top-0 bg-white/70 dark:bg-slate-950/70 backdrop-blur-md border-b border-slate-100 dark:border-slate-900/60 py-4 px-6 relative z-30">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center shadow-md">
-              <Coins className="w-5 h-5 text-white" />
+            <div className="w-9 h-9 bg-slate-100 dark:bg-slate-900 rounded-xl flex items-center justify-center shadow-sm">
+              <SpendWiseLogo variant="icon" className="w-7 h-7" darkMode={darkMode} />
             </div>
             <div>
               <span className="block text-[8px] font-mono tracking-wider text-slate-400 dark:text-slate-500 uppercase font-black">

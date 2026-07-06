@@ -37,7 +37,7 @@ const PrivacyPolicy: React.FC = () => {
               <p>To provide a functional and synchronized budgeting environment for flatmates and roommates, we collect the following types of information:</p>
               <ul className="list-disc pl-5 space-y-2">
                 <li>
-                  <strong>Account Profile Information:</strong> When you sign in through Google, we request and securely receive your email address, primary profile display name, and unique user identifier (UID).
+                  <strong>Account Profile Information:</strong> When you register and create an account, we request and securely store your email address, profile display name, and unique user identifier (UID).
                 </li>
                 <li>
                   <strong>Financial Ledger Data:</strong> We store the raw transaction amounts, custom item descriptions, categories, payment logs, and calculation splits that you voluntarily input to manage roommate expenses.

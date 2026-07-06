@@ -11,10 +11,10 @@ import {
   Sun, 
   Moon, 
   Eye, 
-  EyeOff,
-  Sparkles
+  EyeOff
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { SpendWiseLogo } from './SpendWiseLogo';
 
 interface AuthScreenProps {
   darkMode: boolean;
@@ -106,10 +106,10 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ darkMode, setDarkMode }) => {
       {/* Top Header - Icon / Theme Switcher */}
       <div className="max-w-md w-full mx-auto flex items-center justify-between pt-2">
         <div className="flex items-center gap-2">
-          <div className="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center shadow-md">
-            <Home className="w-5 h-5 text-white" />
+          <div className="w-9 h-9 bg-slate-100 dark:bg-slate-900 rounded-xl flex items-center justify-center shadow-sm">
+            <SpendWiseLogo variant="icon" className="w-7 h-7" darkMode={darkMode} />
           </div>
-          <span className="font-black text-xs uppercase tracking-widest text-slate-400 dark:text-slate-550">
+          <span className="font-black text-xs uppercase tracking-widest text-slate-400 dark:text-slate-500">
             SpendWise SecOps
           </span>
         </div>
@@ -128,7 +128,8 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ darkMode, setDarkMode }) => {
         <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 md:p-10 shadow-2xl shadow-slate-200/40 dark:shadow-none border border-slate-100 dark:border-slate-800 relative z-10 transition-all">
           
           {/* Logo brand & greeting */}
-          <div className="text-center mb-6">
+          <div className="text-center mb-6 flex flex-col items-center">
+            <SpendWiseLogo variant="icon" className="w-20 h-20 mb-3" darkMode={darkMode} />
             <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight leading-none mb-2">
               SpendWise
             </h1>
@@ -203,7 +204,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ darkMode, setDarkMode }) => {
                   transition={{ duration: 0.2 }}
                   className="overflow-hidden"
                 >
-                  <label className="block text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1.5 px-0.5">
+                  <label htmlFor="fullName" className="block text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1.5 px-0.5">
                     Your Full Name
                   </label>
                   <div className="relative">
@@ -211,10 +212,13 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ darkMode, setDarkMode }) => {
                       <User className="w-4 h-4" />
                     </div>
                     <input
+                      id="fullName"
+                      name="name"
                       type="text"
                       placeholder="e.g. Aditya Shaw"
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
+                      autoComplete="name"
                       className="w-full text-xs font-bold pl-11 pr-4 py-3.5 bg-slate-55 dark:bg-slate-950 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-100 border border-slate-100 dark:border-slate-850 dark:text-white"
                     />
                   </div>
@@ -224,7 +228,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ darkMode, setDarkMode }) => {
 
             {/* Email Address */}
             <div>
-              <label className="block text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1.5 px-0.5">
+              <label htmlFor="email" className="block text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1.5 px-0.5">
                 Email Address
               </label>
               <div className="relative">
@@ -232,11 +236,14 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ darkMode, setDarkMode }) => {
                   <Mail className="w-4 h-4" />
                 </div>
                 <input
+                  id="email"
+                  name="email"
                   type="email"
                   required
                   placeholder="contact@yourdomain.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="username email"
                   className="w-full text-xs font-bold pl-11 pr-4 py-3.5 bg-slate-55 dark:bg-slate-950 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-100 border border-slate-100 dark:border-slate-855 dark:text-white"
                 />
               </div>
@@ -244,7 +251,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ darkMode, setDarkMode }) => {
 
             {/* Password */}
             <div>
-              <label className="block text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1.5 px-0.5">
+              <label htmlFor="password" className="block text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1.5 px-0.5">
                 Secret Password
               </label>
               <div className="relative">
@@ -252,11 +259,14 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ darkMode, setDarkMode }) => {
                   <Lock className="w-4 h-4" />
                 </div>
                 <input
+                  id="password"
+                  name="password"
                   type={showPassword ? 'text' : 'password'}
                   required
                   placeholder="Minimum 6 characters"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  autoComplete={authMode === 'signup' ? 'new-password' : 'current-password'}
                   className="w-full text-xs font-bold pl-11 pr-10 py-3.5 bg-slate-55 dark:bg-slate-950 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-100 border border-slate-100 dark:border-slate-855 dark:text-white"
                 />
                 <button

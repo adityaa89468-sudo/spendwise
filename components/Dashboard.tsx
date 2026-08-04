@@ -107,7 +107,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigateToRoom }) => {
           <div className="w-16 h-16 bg-indigo-600 rounded-[1.5rem] flex items-center justify-center mx-auto mb-4 shadow-xl shadow-indigo-100 dark:shadow-none">
             <Wallet className="w-8 h-8 text-white" />
           </div>
-          <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight leading-none mb-1.5">Welcome to SpendWise</h2>
+          <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight leading-none mb-1.5">Welcome to Flat Hisab</h2>
           <p className="text-slate-500 dark:text-slate-400 font-medium text-xs max-w-xs mx-auto leading-relaxed">
             Simple, real-time bill splitting and shared expense tracking for roommates.
           </p>
@@ -173,7 +173,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigateToRoom }) => {
                 disabled={submitting}
                 className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-black uppercase tracking-widest text-2xs rounded-2xl shadow-lg transition-transform active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
               >
-                {submitting ? 'Connecting...' : 'Join SpendWise flat'}
+                {submitting ? 'Connecting...' : 'Join Flat Hisab room'}
               </button>
             </form>
           ) : (
@@ -196,7 +196,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigateToRoom }) => {
                 disabled={submitting}
                 className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-black uppercase tracking-widest text-2xs rounded-2xl shadow-lg transition-transform active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
               >
-                {submitting ? 'Creating...' : 'Create SpendWise Room'}
+                {submitting ? 'Creating...' : 'Create Flat Hisab Room'}
               </button>
             </form>
           )}
@@ -437,7 +437,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigateToRoom }) => {
           {expenses.length === 0 && (
             <div className="text-center py-12 opacity-50 bg-slate-50 dark:bg-slate-900 rounded-[2rem] border border-dashed border-slate-200 dark:border-slate-800">
               <ShoppingBag className="w-12 h-12 mx-auto mb-3 text-slate-300" />
-              <p className="text-xs font-black uppercase tracking-widest text-slate-500">No SpendWise expenses yet.</p>
+              <p className="text-xs font-black uppercase tracking-widest text-slate-500">No Flat Hisab expenses yet.</p>
             </div>
           )}
         </div>

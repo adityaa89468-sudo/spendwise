@@ -93,7 +93,7 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({
                   Update Available!
                 </h3>
                 <p className="text-xs text-emerald-100 font-medium mt-0.5">
-                  Spendwise Co-Living Ledger
+                  Flat Hisab: Expense Splitter
                 </p>
               </div>
             </div>
@@ -123,7 +123,7 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({
               <div className="flex items-start gap-3 p-3.5 bg-rose-500/10 border border-rose-500/30 rounded-2xl text-rose-600 dark:text-rose-400">
                 <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
                 <div className="text-xs font-medium leading-relaxed">
-                  <span className="font-bold">Required Update:</span> This release includes critical database and settlement security enhancements. Please update to continue using Spendwise.
+                  <span className="font-bold">Required Update:</span> This release includes critical database and settlement security enhancements. Please update to continue using Flat Hisab.
                 </div>
               </div>
             )}

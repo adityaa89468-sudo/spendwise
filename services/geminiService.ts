@@ -82,13 +82,13 @@ const simulateOcr = (fileName: string) => {
 const simulateChat = (message: string, currentExpensesTotal: number) => {
   const text = message.toLowerCase();
   if (text.includes('save') || text.includes('budget') || text.includes('reduce')) {
-    return "💡 **SpendWise Pro Saving Insight:**\n\nBased on typical hostel setups, **Snacks/Maggi** and **Food Orders** are the easiest categories to optimize.\n\n1. Consider buying 12-pack bulk noodles rather than daily individual packs. This saves up to 18%.\n2. Dedicate a 'Sunday Cooking Chores' pool instead of ordering online. This can drop your food budget by almost **₹1,200/month** per student!\n3. Your room's current spending is **₹" + currentExpensesTotal + "**. Setting a target pool of ₹5,000 can keep everyone aligned.";
+    return "💡 **Flat Hisab Pro Saving Insight:**\n\nBased on typical hostel setups, **Snacks/Maggi** and **Food Orders** are the easiest categories to optimize.\n\n1. Consider buying 12-pack bulk noodles rather than daily individual packs. This saves up to 18%.\n2. Dedicate a 'Sunday Cooking Chores' pool instead of ordering online. This can drop your food budget by almost **₹1,200/month** per student!\n3. Your room's current spending is **₹" + currentExpensesTotal + "**. Setting a target pool of ₹5,000 can keep everyone aligned.";
   }
   if (text.includes('who') || text.includes('owe') || text.includes('debt') || text.includes('pay')) {
-    return "📊 Let's look at the debt network! Rent, Cylinder, and Internet are the common bills. SpendWise computes debt minimization automatically, meaning instead of everyone paying each other individually, it aggregates the balances so that you settle with **exactly one payment** to the person owed the most. \n\nEnsure everyone uploads their UPI QR code in their Profile, so settlements take a single click!";
+    return "📊 Let's look at the debt network! Rent, Cylinder, and Internet are the common bills. Flat Hisab computes debt minimization automatically, meaning instead of everyone paying each other individually, it aggregates the balances so that you settle with **exactly one payment** to the person owed the most. \n\nEnsure everyone uploads their UPI QR code in their Profile, so settlements take a single click!";
   }
   if (text.includes('cylinder') || text.includes('gas') || text.includes('mess')) {
-    return "🔥 **Gas Cylinder Tips:**\n\nA 14.2kg household LPG cylinder usually lasts around 45-60 days for 4 roommates. Splitting this equally is best, but if a roommate goes home for holidays, you can utilize SpendWise's **Exclude Absent Roommate** split option when logging the next cylinder purchase!";
+    return "🔥 **Gas Cylinder Tips:**\n\nA 14.2kg household LPG cylinder usually lasts around 45-60 days for 4 roommates. Splitting this equally is best, but if a roommate goes home for holidays, you can utilize Flat Hisab's **Exclude Absent Roommate** split option when logging the next cylinder purchase!";
   }
   return "👋 Hey there! I am your AI Room Expense Assistant.\n\nYou can ask me things like:\n- *'How can we reduce our grocery bills?'*\n- *'How does the UPI settlement work?'*\n- *'How should we split utility bills (Electricity/Internet)?'*\n\nI can also extract total amounts and item lists from receipt screenshots! Upload a receipt in the Scanner tab and watch the magic.";
 };
@@ -206,7 +206,7 @@ export const chatWithAssistant = async (message: string, currentExpensesTotal: n
       model: "gemini-3.5-flash",
       contents: message,
       config: {
-        systemInstruction: `You are SpendWise AI assistant. You help hostel/roommates manage shared expenses, reduce debt disputes, and live economically. Keeps answers student-friendly, encouraging, helpful, and concise. Your group's total spending stands at ₹${currentExpensesTotal}.`
+        systemInstruction: `You are Flat Hisab AI assistant. You help hostel/roommates manage shared expenses, reduce debt disputes, and live economically. Keeps answers student-friendly, encouraging, helpful, and concise. Your group's total spending stands at ₹${currentExpensesTotal}.`
       }
     });
 

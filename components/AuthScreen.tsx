@@ -151,7 +151,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ darkMode, setDarkMode }) => {
             <SpendWiseLogo variant="icon" className="w-7 h-7" darkMode={darkMode} />
           </div>
           <span className="font-black text-xs uppercase tracking-widest text-slate-400 dark:text-slate-500">
-            SpendWise SecOps
+            Flat Hisab SecOps
           </span>
         </div>
         
@@ -172,7 +172,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ darkMode, setDarkMode }) => {
           <div className="text-center mb-6 flex flex-col items-center">
             <SpendWiseLogo variant="icon" className="w-20 h-20 mb-3" darkMode={darkMode} />
             <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight leading-none mb-2">
-              SpendWise
+              Flat Hisab
             </h1>
             <p className="text-xs text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">
               Roommate Expense Splitter

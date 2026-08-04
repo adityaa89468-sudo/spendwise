@@ -40,7 +40,7 @@ const SettlementsList: React.FC = () => {
 
   // Build real UPI Deep Link
   const buildUpiLink = (recipName: string, recipUpi: string, amount: number) => {
-    return `upi://pay?pa=${recipUpi}&pn=${encodeURIComponent(recipName)}&tn=SpendWise%20Settlement&am=${amount}&cu=INR`;
+    return `upi://pay?pa=${recipUpi}&pn=${encodeURIComponent(recipName)}&tn=Flat%20Hisab%20Settlement&am=${amount}&cu=INR`;
   };
 
   return (
@@ -172,7 +172,7 @@ const SettlementsList: React.FC = () => {
                 <IndianRupee className="w-5 h-5 text-indigo-600" /> Settle Shared Bill
               </h3>
               <p className="text-xs text-slate-500 mb-6">
-                You are paying <span className="font-bold text-slate-700 dark:text-white">{selectedSettlement.toName}</span> as calculated by SpendWise algorithm.
+                You are paying <span className="font-bold text-slate-700 dark:text-white">{selectedSettlement.toName}</span> as calculated by Flat Hisab algorithm.
               </p>
 
               {/* UPI QR Display - REAL Integration */}

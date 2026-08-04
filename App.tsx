@@ -139,7 +139,7 @@ const App: React.FC = () => {
       if (info.updateAvailable) {
         setShowUpdateModal(true);
       } else if (manual) {
-        setUpdateToastMessage(`Spendwise is up to date (v${info.currentVersion})`);
+        setUpdateToastMessage(`Flat Hisab is up to date (v${info.currentVersion})`);
         setTimeout(() => setUpdateToastMessage(null), 3500);
       }
     } catch (err) {
@@ -454,7 +454,7 @@ const App: React.FC = () => {
               <SpendWiseLogo variant="icon" className="w-7 h-7" darkMode={darkMode} />
             </div>
             <div>
-              <h2 className="font-extrabold text-sm text-slate-900 dark:text-white leading-none">SpendWise</h2>
+              <h2 className="font-extrabold text-sm text-slate-900 dark:text-white leading-none">Flat Hisab</h2>
               <span className="text-[10px] font-mono tracking-wider uppercase text-slate-400">Flatmate Ledger</span>
             </div>
           </div>
@@ -690,7 +690,7 @@ const App: React.FC = () => {
 
         {/* Global Footer */}
         <footer className="py-6 text-center text-[10px] font-black uppercase tracking-widest text-slate-400/80">
-          SpendWise Roommate Splitter
+          Flat Hisab: Expense Splitter
         </footer>
 
         {/* Invitation link popup triggers */}
@@ -1309,7 +1309,7 @@ const App: React.FC = () => {
                     Debt Simplification
                   </h3>
                   <p className="text-xs text-slate-500 dark:text-slate-450 font-semibold leading-relaxed mt-1">
-                    SpendWise automatically optimizes debt chains to suggest the minimum number of transactions needed to settle all roommate dues.
+                    Flat Hisab automatically optimizes debt chains to suggest the minimum number of transactions needed to settle all roommate dues.
                   </p>
                 </div>
 
@@ -1787,12 +1787,12 @@ const App: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Play Store App Updates Section */}
+                {/* Play Store App Updates & Production Ads Section */}
                 <div className="pt-6 border-t border-slate-50 dark:border-slate-850/50 text-left">
                   <div className="flex items-center justify-between mb-3">
-                    <p className="text-[10px] text-slate-400 font-extrabold uppercase">Play Store App Updates</p>
+                    <p className="text-[10px] text-slate-400 font-extrabold uppercase">Play Store & Ads Status</p>
                     <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded-full border border-emerald-200/50 dark:border-emerald-800/40">
-                      v{CURRENT_APP_VERSION}
+                      PRODUCTION • LIVE ADS
                     </span>
                   </div>
 
@@ -1803,28 +1803,20 @@ const App: React.FC = () => {
                           <DownloadCloud className="w-5 h-5" />
                         </div>
                         <div>
-                          <h5 className="text-xs font-extrabold text-slate-800 dark:text-white">Google Play Store Version</h5>
-                          <p className="text-[10px] text-slate-400 font-medium">Automatic updates & releases</p>
+                          <h5 className="text-xs font-extrabold text-slate-800 dark:text-white">Google Play Store Version {CURRENT_APP_VERSION}</h5>
+                          <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">● Production Mode Active (Testing Disabled)</p>
                         </div>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2 pt-1">
+                    <div className="pt-1">
                       <button
                         onClick={() => handleCheckForUpdates(true, false)}
                         disabled={isCheckingUpdate}
-                        className="py-2.5 px-3 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-750 border border-slate-200/80 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+                        className="w-full py-2.5 px-3 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-sm transition-all active:scale-95 cursor-pointer"
                       >
-                        <RefreshCw className={`w-3.5 h-3.5 ${isCheckingUpdate ? 'animate-spin text-indigo-500' : ''}`} />
-                        <span>{isCheckingUpdate ? 'Checking...' : 'Check Update'}</span>
-                      </button>
-
-                      <button
-                        onClick={() => handleCheckForUpdates(true, true)}
-                        className="py-2.5 px-3 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-sm transition-all active:scale-95 cursor-pointer"
-                      >
-                        <Sparkles className="w-3.5 h-3.5" />
-                        <span>Test Popup</span>
+                        <RefreshCw className={`w-3.5 h-3.5 ${isCheckingUpdate ? 'animate-spin' : ''}`} />
+                        <span>{isCheckingUpdate ? 'Checking Play Store...' : 'Check Play Store Updates'}</span>
                       </button>
                     </div>
                   </div>
@@ -1897,7 +1889,7 @@ const App: React.FC = () => {
 
       {/* Global Bottom Sticky Info Bar */}
       <footer className="pt-6 pb-28 border-t border-slate-100 dark:border-slate-900 bg-white/40 dark:bg-slate-950/40 relative z-10 text-center text-[10px] text-slate-400 font-bold uppercase tracking-wider flex flex-col items-center justify-center gap-1.5">
-        <span>Spendwise Shared Expense Tracker</span>
+        <span>Flat Hisab: Expense Splitter</span>
         <div className="flex items-center gap-2 text-[9px] text-slate-400/70 normal-case font-medium">
           <span>Version {CURRENT_APP_VERSION}</span>
           <span>•</span>
@@ -1909,6 +1901,9 @@ const App: React.FC = () => {
             {isCheckingUpdate ? 'Checking Play Store...' : 'Check Play Store Updates'}
           </button>
         </div>
+        <p className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold normal-case">
+          Made by Aditya
+        </p>
       </footer>
 
       {/* Floating Bottom Sticky Navigation Toolbar */}

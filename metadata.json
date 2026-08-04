@@ -1,6 +1,6 @@
 {
-  "name": "Spendwise",
-  "description": "Spendwise: A lightweight, secure shared expense tracker for roommates and flatmates. Easily split household bills, track balances, and settle debts with a clean and intuitive interface.",
+  "name": "Flat Hisab: Expense Splitter",
+  "description": "Flat Hisab: Expense Splitter: A lightweight, secure shared expense tracker for roommates and flatmates. Easily split household bills, track balances, and settle debts with a clean and intuitive interface.",
   "requestFramePermissions": [],
   "androidPackageName": "com.adityaproductionspendwise.app",
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]

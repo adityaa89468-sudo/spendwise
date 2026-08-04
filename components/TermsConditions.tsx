@@ -27,21 +27,21 @@ const TermsConditions: React.FC = () => {
             <section>
               <h2 className="text-xl font-black text-slate-900 dark:text-white mb-3">1. Acceptance of Terms</h2>
               <p>
-                By downloading, installing, or utilising <strong>Spendwise</strong>, these Terms & Conditions automatically apply to you in full. If you do not agree with any of the terms outlined herein, you must immediately terminate use of the app and uninstall it. You are granted a personal, non-transferrable, non-exclusive license to use Spendwise for your personal or household budget collaboration.
+                By downloading, installing, or utilising <strong>Flat Hisab: Expense Splitter</strong>, these Terms & Conditions automatically apply to you in full. If you do not agree with any of the terms outlined herein, you must immediately terminate use of the app and uninstall it. You are granted a personal, non-transferrable, non-exclusive license to use Flat Hisab for your personal or household budget collaboration.
               </p>
             </section>
 
             <section>
               <h2 className="text-xl font-black text-slate-900 dark:text-white mb-3">2. Service Modifications & Pricing Policy</h2>
               <p>
-                We reserve the right to modify, suspend, or discontinue any aspect of Spendwise or charge for services or optional premium tier updates, at any time and for any reason. We will never introduce a fee without providing full, transparent disclosures regarding pricing structures and features in advance.
+                We reserve the right to modify, suspend, or discontinue any aspect of Flat Hisab or charge for services or optional premium tier updates, at any time and for any reason. We will never introduce a fee without providing full, transparent disclosures regarding pricing structures and features in advance.
               </p>
             </section>
 
             <section>
               <h2 className="text-xl font-black text-slate-900 dark:text-white mb-3">3. User Obligations & Device Integrity</h2>
               <p>
-                Spendwise processes financial logs and calculations that reside either locally or are synchronised with Google Cloud Firebase. It is your absolute responsibility to keep your device, account parameters, and login credentials protected. We strongly advise against jailbreaking, rooting, or otherwise modifying your mobile operating system, as this compromises security defenses and may lead to data leakage or incorrect application operation.
+                Flat Hisab processes financial logs and calculations that reside either locally or are synchronised with Google Cloud Firebase. It is your absolute responsibility to keep your device, account parameters, and login credentials protected. We strongly advise against jailbreaking, rooting, or otherwise modifying your mobile operating system, as this compromises security defenses and may lead to data leakage or incorrect application operation.
               </p>
             </section>
 
@@ -66,7 +66,7 @@ const TermsConditions: React.FC = () => {
             <section>
               <h2 className="text-xl font-black text-slate-900 dark:text-white mb-3">5. Disclaimer of Liability & Accuracy of Calculations</h2>
               <p>
-                Spendwise is provided strictly on an "as-is" and "as available" basis without warranties of any kind, whether express or implied. Though we utilize a robust algorithmic debt reduction pipeline to compute roommates' optimal settlements, physical currency handovers and external UPI transfers are performed exclusively by you outside of our direct application environment. The Developer is not responsible for any tracking disputes, banking transaction failures, or inaccurate calculations stemming from invalid manual parameters.
+                Flat Hisab is provided strictly on an "as-is" and "as available" basis without warranties of any kind, whether express or implied. Though we utilize a robust algorithmic debt reduction pipeline to compute roommates' optimal settlements, physical currency handovers and external UPI transfers are performed exclusively by you outside of our direct application environment. The Developer is not responsible for any tracking disputes, banking transaction failures, or inaccurate calculations stemming from invalid manual parameters.
               </p>
             </section>
 

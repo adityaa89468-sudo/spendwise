@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.adityaproductionspendwise.app',
-  appName: 'SpendWise',
+  appName: 'Flat Hisab: Expense Splitter',
   webDir: 'dist',
   server: {
     androidScheme: 'https'

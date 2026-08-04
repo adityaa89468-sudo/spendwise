@@ -15,6 +15,7 @@ interface AdItem {
   title: string;
   body: string;
   actionText: string;
+  url: string;
   icon: React.ComponentType<any>;
   badgeColor: string;
   textColor: string;
@@ -27,6 +28,7 @@ const ADS_DATA: AdItem[] = [
     title: "Domino's Roommate Combo",
     body: "Get 2 Medium Pizzas + Pepsi for ₹399. Split with roommates instantly!",
     actionText: "Order Pizza",
+    url: "https://www.dominos.co.in",
     icon: Pizza,
     badgeColor: "bg-orange-100 text-orange-600 dark:bg-orange-950/30 dark:text-orange-400",
     textColor: "text-orange-600 dark:text-orange-450",
@@ -37,6 +39,7 @@ const ADS_DATA: AdItem[] = [
     title: "Airtel Xstream Room Plan",
     body: "WiFi with unlimited data starting at ₹499/mo. Check coverage in your sector.",
     actionText: "Check Coverage",
+    url: "https://www.airtel.in/xstream-fiber",
     icon: Wifi,
     badgeColor: "bg-red-100 text-red-600 dark:bg-red-950/30 dark:text-red-400",
     textColor: "text-red-600 dark:text-red-450",
@@ -47,6 +50,7 @@ const ADS_DATA: AdItem[] = [
     title: "ChoreWise Smart Addon",
     body: "Tired of chore cleaning arguments? Automate roommates duties smoothly.",
     actionText: "Install Free",
+    url: "https://play.google.com/store/search?q=chores+flatmate&c=apps",
     icon: Sparkles,
     badgeColor: "bg-indigo-100 text-indigo-650 dark:bg-indigo-950/30 dark:text-indigo-400",
     textColor: "text-indigo-650 dark:text-indigo-400",
@@ -57,6 +61,7 @@ const ADS_DATA: AdItem[] = [
     title: "NestSecure Rent Shield",
     body: "Keep security deposits protected from unexpected roommates breakages. Starts at ₹99.",
     actionText: "Secure Flat",
+    url: "https://play.google.com/store/apps/details?id=com.adityaproductionspendwise.app",
     icon: ShieldCheck,
     badgeColor: "bg-emerald-100 text-emerald-650 dark:bg-emerald-950/30 dark:text-emerald-400",
     textColor: "text-emerald-655 dark:text-emerald-400",
@@ -65,8 +70,9 @@ const ADS_DATA: AdItem[] = [
   {
     id: 5,
     title: "Auto UPI QR Reminders",
-    body: "Let SpendWise ping lazy roommates automatically. Enable direct WhatsApp links.",
+    body: "Let Flat Hisab ping lazy roommates automatically. Enable direct WhatsApp links.",
     actionText: "Learn More",
+    url: "https://play.google.com/store/apps/details?id=com.adityaproductionspendwise.app",
     icon: Megaphone,
     badgeColor: "bg-amber-100 text-amber-650 dark:bg-amber-950/30 dark:text-amber-400",
     textColor: "text-amber-650 dark:text-amber-400",
@@ -93,6 +99,13 @@ export const BannerAd: React.FC = () => {
 
   const currentAd = ADS_DATA[currentIndex];
   const IconComponent = currentAd.icon;
+
+  const handleAdClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (currentAd.url) {
+      window.open(currentAd.url, '_blank', 'noopener,noreferrer');
+    }
+  };
 
   return (
     <div className="w-full px-1">
@@ -123,12 +136,10 @@ export const BannerAd: React.FC = () => {
         {/* Right Side: CTA Button and Dismiss Close */}
         <div className="flex items-center gap-2 shrink-0">
           <a
-            href="#sponsored-action"
-            onClick={(e) => {
-              e.preventDefault();
-              // Gentle notification for demo purposes
-              alert(`Thank you for supporting SpendWise! This opens the sponsor portal: "${currentAd.title}"`);
-            }}
+            href={currentAd.url}
+            onClick={handleAdClick}
+            target="_blank"
+            rel="noopener noreferrer"
             className="px-3 py-1.5 bg-white dark:bg-slate-850 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-150/40 dark:border-slate-750 text-slate-700 dark:text-slate-300 rounded-xl text-[9.5px] md:text-3xs font-extrabold uppercase tracking-wider flex items-center gap-1 transition-all shadow-xs cursor-pointer active:scale-95"
           >
             <span>{currentAd.actionText}</span>

@@ -79,7 +79,7 @@ const GroupsManager: React.FC<GroupsManagerProps> = ({ onSuccess }) => {
         <div className="w-16 h-16 bg-indigo-600 rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-xl shadow-indigo-100">
           <Home className="w-8 h-8 text-white" />
         </div>
-        <h2 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">SpendWise</h2>
+        <h2 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">Flat Hisab</h2>
         <p className="text-slate-500 dark:text-slate-400 font-medium text-sm mt-1">
           Shared expenses management for flatmates and college roommates
         </p>
@@ -150,7 +150,7 @@ const GroupsManager: React.FC<GroupsManagerProps> = ({ onSuccess }) => {
             disabled={submitting}
             className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-black uppercase tracking-widest text-xs rounded-2xl shadow-lg transition-transform active:scale-95 flex items-center justify-center gap-2"
           >
-            {submitting ? 'Verifying...' : 'Join SpendWise flat'}
+            {submitting ? 'Verifying...' : 'Join Flat Hisab room'}
           </button>
         </motion.form>
       ) : (
@@ -178,7 +178,7 @@ const GroupsManager: React.FC<GroupsManagerProps> = ({ onSuccess }) => {
             disabled={submitting}
             className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-black uppercase tracking-widest text-xs rounded-2xl shadow-lg transition-transform active:scale-95 flex items-center justify-center gap-2"
           >
-            {submitting ? 'Creating...' : 'Create SpendWise group'}
+            {submitting ? 'Creating...' : 'Create Flat Hisab group'}
           </button>
         </motion.form>
       )}

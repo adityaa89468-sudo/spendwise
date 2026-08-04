@@ -1,7 +1,7 @@
 {
   "entities": {
     "UserProfile": {
-      "title": "SpendWise User Profile",
+      "title": "Flat Hisab User Profile",
       "description": "User profile with roommate score, streaks, and settings",
       "type": "object",
       "properties": {

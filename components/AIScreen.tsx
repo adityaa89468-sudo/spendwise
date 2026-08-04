@@ -23,7 +23,7 @@ const AIScreen: React.FC = () => {
     {
       id: '1',
       sender: 'assistant',
-      text: "👋 Hi! I am SpendWise AI, your smart budgeting companion. Ask me any room spending questions or upload a receipt to parse items instantly!",
+      text: "👋 Hi! I am Flat Hisab AI, your smart budgeting companion. Ask me any room spending questions or upload a receipt to parse items instantly!",
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }
   ]);

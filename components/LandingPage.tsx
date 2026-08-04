@@ -37,7 +37,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, darkMode
             <SpendWiseLogo variant="icon" className="w-8 h-8 text-white" darkMode={true} />
           </div>
           <div>
-            <h1 className="font-black text-base tracking-tight text-slate-900 dark:text-white leading-none">Spendwise</h1>
+            <h1 className="font-black text-base tracking-tight text-slate-900 dark:text-white leading-none">Flat Hisab</h1>
             <span className="text-[9px] font-black tracking-widest uppercase text-indigo-600 dark:text-indigo-400">
               Co-Living Ledger
             </span>
@@ -223,7 +223,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, darkMode
                   Ethical AdModel
                 </h5>
                 <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-semibold">
-                  Spendwise is supported by completely non-obtrusive, hand-picked roommate sponsorships (e.g. broadband deals, roommate pizzas). No popups, no tracking.
+                  Flat Hisab is supported by completely non-obtrusive, hand-picked roommate sponsorships (e.g. broadband deals, roommate pizzas). No popups, no tracking.
                 </p>
               </div>
             </div>
@@ -239,7 +239,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, darkMode
               Start splitting bills today
             </h4>
             <p className="text-xs text-indigo-100 leading-relaxed font-medium">
-              Join thousands of flatmates who trust Spendwise to handle roommate group bills. No spreadsheets, no arguments, just perfect harmony.
+              Join thousands of flatmates who trust Flat Hisab to handle roommate group bills. No spreadsheets, no arguments, just perfect harmony.
             </p>
             <button
               onClick={onGetStarted}
@@ -273,8 +273,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, darkMode
         </div>
 
         <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider space-y-1">
-          <p>Spendwise Shared Expense Tracker © {new Date().getFullYear()}</p>
-          <p className="text-[8.5px] text-slate-400/60 normal-case font-medium">All Rights Reserved</p>
+          <p>Flat Hisab: Expense Splitter © {new Date().getFullYear()}</p>
+          <p className="text-[9.5px] text-slate-500 dark:text-slate-400 normal-case font-semibold">Made by Aditya</p>
         </div>
       </footer>
 

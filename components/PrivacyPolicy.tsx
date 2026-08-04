@@ -28,7 +28,7 @@ const PrivacyPolicy: React.FC = () => {
             <section>
               <h2 className="text-xl font-black text-slate-900 dark:text-white mb-3">1. Introduction & Identity</h2>
               <p>
-                <strong>Spendwise</strong> ("we", "our", "us", or "Developer") is committed to protecting your privacy. This Privacy Policy is designed to comply with Google Play Store Developer Policies, including the Google Play Developer Distribution Agreement. It explains how we collect, use, process, store, and request erasure of your personal information when you install, access, or use the Spendwise mobile application.
+                <strong>Flat Hisab: Expense Splitter</strong> ("we", "our", "us", or "Developer") is committed to protecting your privacy. This Privacy Policy is designed to comply with Google Play Store Developer Policies, including the Google Play Developer Distribution Agreement. It explains how we collect, use, process, store, and request erasure of your personal information when you install, access, or use the Flat Hisab mobile application.
               </p>
             </section>
 
@@ -64,7 +64,7 @@ const PrivacyPolicy: React.FC = () => {
 
             <section>
               <h2 className="text-xl font-black text-slate-900 dark:text-white mb-3">4. Third-Party Services & Dynamic Integration</h2>
-              <p>The Spendwise application incorporates SDKs and safe API links provided by verified third-party partners. These operators may handle data according to their respective policies:</p>
+              <p>The Flat Hisab application incorporates SDKs and safe API links provided by verified third-party partners. These operators may handle data according to their respective policies:</p>
               <ul className="list-disc pl-5 space-y-2">
                 <li>
                   <strong>Google Firebase (Firestore, Auth):</strong> Used for secure cloud-database synchronization, user profile management, and authentication records. See the <a target="_blank" rel="noopener noreferrer" href="https://firebase.google.com/support/privacy" className="text-indigo-600 dark:text-indigo-400 underline">Firebase Privacy Shield details</a>.
@@ -95,7 +95,7 @@ const PrivacyPolicy: React.FC = () => {
             <section>
               <h2 className="text-xl font-black text-slate-900 dark:text-white mb-3">6. Children & Family Policy (COPPA Compliance)</h2>
               <p>
-                The Spendwise application is strictly designed and targeted for young students, hostel room occupants, and adults aged 13 and older. We do not knowingly collect, request, or maintain personally identifiable information from children under the age of 13. If you have reason to believe that a child under 13 has provided us with personal information, please contact us immediately to purge the records immediately.
+                The Flat Hisab application is strictly designed and targeted for young students, hostel room occupants, and adults aged 13 and older. We do not knowingly collect, request, or maintain personally identifiable information from children under the age of 13. If you have reason to believe that a child under 13 has provided us with personal information, please contact us immediately to purge the records immediately.
               </p>
             </section>
 
@@ -108,7 +108,7 @@ const PrivacyPolicy: React.FC = () => {
 
             <section>
               <h2 className="text-xl font-black text-slate-900 dark:text-white mb-3">8. Developer Contact Information</h2>
-              <p>If you have any feedback, questions, or data privacy concerns regarding Spendwise, please contact us directly at:</p>
+              <p>If you have any feedback, questions, or data privacy concerns regarding Flat Hisab, please contact us directly at:</p>
               <p className="font-extrabold text-indigo-600 dark:text-indigo-400 mt-2">
                 Developer Contact: adityaa89468@gmail.com
               </p>

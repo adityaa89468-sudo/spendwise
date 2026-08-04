@@ -25,7 +25,7 @@ service cloud.firestore {
       allow read, write: if isOwner(userId);
     }
 
-    // SpendWise Groups Rules
+    // Flat Hisab Groups Rules
     match /groups/{groupId} {
       allow read, write: if isSignedIn();
     }

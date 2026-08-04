@@ -47,7 +47,7 @@ export const showBanner = async () => {
   const isProduction = import.meta.env.VITE_ADMOB_PRODUCTION === 'true';
 
   await AdMob.showBanner({
-    adId: import.meta.env.VITE_ADMOB_BANNER_ID || 'ca-app-pub-9364231981895017/2923766175',
+    adId: import.meta.env.VITE_ADMOB_BANNER_ID || 'ca-app-pub-9364231981895017/7969280469',
     adSize: BannerAdSize.ADAPTIVE_BANNER,
     position: BannerAdPosition.BOTTOM_CENTER,
     margin: 85, // Positioned safely above the bottom navigation bar

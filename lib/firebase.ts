@@ -41,7 +41,7 @@ export const googleProvider = new GoogleAuthProvider();
 // Test connection silently - move to a more resilient approach
 async function testConnection() {
   try {
-    console.log("Firebase: Testing connection to project:", firebaseConfig.projectId);
+    console.log("Firebase: Testing connection...");
     // Attempt a silent read to check connectivity
     await getDocFromServer(doc(db, 'test', 'connection'));
     console.log("Firebase: Connection successful.");

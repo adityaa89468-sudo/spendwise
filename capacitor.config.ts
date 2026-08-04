@@ -9,7 +9,7 @@ const config: CapacitorConfig = {
   },
   plugins: {
     AdMob: {
-      androidAppId: 'ca-app-pub-9364231981895017~9290923465',
+      androidAppId: 'ca-app-pub-9364231981895017~7433331132',
     },
     Keyboard: {
       resize: 'body',

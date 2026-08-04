@@ -36,6 +36,8 @@ import TermsConditions from './components/TermsConditions';
 import { PullToRefresh } from './components/PullToRefresh';
 import { AppNotification, GroupMember, Expense, Settlement } from './types';
 import { SpendWiseLogo } from './components/SpendWiseLogo';
+import { BannerAd } from './components/BannerAd';
+import { LandingPage } from './components/LandingPage';
 
 const App: React.FC = () => {
   const { user, profile, loading, signOut, updateUserProfile } = useAuth();
@@ -59,6 +61,7 @@ const App: React.FC = () => {
 
   // Navigation states
   const [activeTab, setActiveTab] = useState<'dashboard' | 'split' | 'settle' | 'history' | 'room'>('dashboard');
+  const [showAuth, setShowAuth] = useState(false);
   
   // Theme state
   const [darkMode, setDarkMode] = useState<boolean>(() => {
@@ -379,9 +382,24 @@ const App: React.FC = () => {
     );
   }
 
-  // Not logged in -> Show polished credentials access screen
+  // Not logged in -> Show polished homepage or auth access screen
   if (!user) {
-    return <AuthScreen darkMode={darkMode} setDarkMode={setDarkMode} />;
+    if (showAuth) {
+      return (
+        <div className="relative animate-fade-in">
+          <AuthScreen darkMode={darkMode} setDarkMode={setDarkMode} />
+          {/* Back button to homepage */}
+          <button
+            onClick={() => setShowAuth(false)}
+            className="fixed top-8 left-8 p-3 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-850 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white border border-slate-150/40 dark:border-slate-800 rounded-2xl shadow-md transition-all cursor-pointer z-50 flex items-center gap-2 text-2xs font-extrabold uppercase tracking-widest active:scale-95 animate-pulse-subtle"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Homepage</span>
+          </button>
+        </div>
+      );
+    }
+    return <LandingPage onGetStarted={() => setShowAuth(true)} darkMode={darkMode} setDarkMode={setDarkMode} />;
   }
 
   // Logged-in but has no active Room -> Provide invitations & join panel
@@ -872,6 +890,11 @@ const App: React.FC = () => {
               {tab.name}
             </button>
           ))}
+        </div>
+
+        {/* Banner Ad Segment (Highly polished and non-disturbing) */}
+        <div className="mb-8">
+          <BannerAd />
         </div>
 
         {/* Tab view routes */}

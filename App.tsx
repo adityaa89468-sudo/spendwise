@@ -24,7 +24,10 @@ import {
   HelpCircle,
   MessageSquare,
   DollarSign,
-  FileText
+  FileText,
+  DownloadCloud,
+  RefreshCw,
+  Download
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation, Link } from 'react-router-dom';
@@ -34,10 +37,12 @@ import AuthScreen from './components/AuthScreen';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import TermsConditions from './components/TermsConditions';
 import { PullToRefresh } from './components/PullToRefresh';
-import { AppNotification, GroupMember, Expense, Settlement } from './types';
+import { AppNotification, GroupMember, Expense, Settlement, AppUpdateInfo } from './types';
 import { SpendWiseLogo } from './components/SpendWiseLogo';
 import { BannerAd } from './components/BannerAd';
 import { LandingPage } from './components/LandingPage';
+import { AppUpdateModal } from './components/AppUpdateModal';
+import { fetchAppUpdateInfo, setTestUpdateOverride, CURRENT_APP_VERSION } from './services/appUpdateService';
 
 const App: React.FC = () => {
   const { user, profile, loading, signOut, updateUserProfile } = useAuth();
@@ -116,6 +121,38 @@ const App: React.FC = () => {
   // Notification panel drawer
   const [showNotifications, setShowNotifications] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+
+  // Play Store App Update popup states
+  const [updateInfo, setUpdateInfo] = useState<AppUpdateInfo | null>(null);
+  const [showUpdateModal, setShowUpdateModal] = useState<boolean>(false);
+  const [isCheckingUpdate, setIsCheckingUpdate] = useState<boolean>(false);
+  const [updateToastMessage, setUpdateToastMessage] = useState<string | null>(null);
+
+  const handleCheckForUpdates = async (manual: boolean = false, forceTest: boolean = false) => {
+    setIsCheckingUpdate(true);
+    try {
+      if (forceTest) {
+        setTestUpdateOverride(true, false, '1.1.0');
+      }
+      const info = await fetchAppUpdateInfo(manual || forceTest);
+      setUpdateInfo(info);
+      if (info.updateAvailable) {
+        setShowUpdateModal(true);
+      } else if (manual) {
+        setUpdateToastMessage(`Spendwise is up to date (v${info.currentVersion})`);
+        setTimeout(() => setUpdateToastMessage(null), 3500);
+      }
+    } catch (err) {
+      console.error("Failed to check for Play Store app updates:", err);
+    } finally {
+      setIsCheckingUpdate(false);
+    }
+  };
+
+  // Check for app updates on boot
+  useEffect(() => {
+    handleCheckForUpdates(false, false);
+  }, []);
 
   // Active toast notification state for real-time split alerts
   const [activeToast, setActiveToast] = useState<any | null>(null);
@@ -1750,6 +1787,49 @@ const App: React.FC = () => {
                   </div>
                 </div>
 
+                {/* Play Store App Updates Section */}
+                <div className="pt-6 border-t border-slate-50 dark:border-slate-850/50 text-left">
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-[10px] text-slate-400 font-extrabold uppercase">Play Store App Updates</p>
+                    <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded-full border border-emerald-200/50 dark:border-emerald-800/40">
+                      v{CURRENT_APP_VERSION}
+                    </span>
+                  </div>
+
+                  <div className="p-4 bg-gradient-to-br from-slate-50 to-indigo-50/30 dark:from-slate-900/90 dark:to-indigo-950/20 border border-slate-200/70 dark:border-slate-800 rounded-2xl space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-9 h-9 rounded-xl bg-emerald-600/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                          <DownloadCloud className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <h5 className="text-xs font-extrabold text-slate-800 dark:text-white">Google Play Store Version</h5>
+                          <p className="text-[10px] text-slate-400 font-medium">Automatic updates & releases</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 pt-1">
+                      <button
+                        onClick={() => handleCheckForUpdates(true, false)}
+                        disabled={isCheckingUpdate}
+                        className="py-2.5 px-3 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-750 border border-slate-200/80 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+                      >
+                        <RefreshCw className={`w-3.5 h-3.5 ${isCheckingUpdate ? 'animate-spin text-indigo-500' : ''}`} />
+                        <span>{isCheckingUpdate ? 'Checking...' : 'Check Update'}</span>
+                      </button>
+
+                      <button
+                        onClick={() => handleCheckForUpdates(true, true)}
+                        className="py-2.5 px-3 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-sm transition-all active:scale-95 cursor-pointer"
+                      >
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>Test Popup</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Leave Room action */}
                 <div className="pt-6 border-t border-slate-50 dark:border-slate-850/50 text-left">
                   <p className="text-[10px] text-slate-400 font-extrabold uppercase mb-2">Danger zone</p>
@@ -1800,10 +1880,35 @@ const App: React.FC = () => {
 
       </main>
 
+      {/* Up-to-date Toast Banner */}
+      <AnimatePresence>
+        {updateToastMessage && (
+          <motion.div
+            initial={{ opacity: 0, y: -20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+            className="fixed top-5 left-1/2 -translate-x-1/2 z-50 bg-slate-900 text-white border border-slate-700/80 px-4 py-2.5 rounded-full shadow-2xl flex items-center gap-2.5 text-xs font-extrabold"
+          >
+            <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span>{updateToastMessage}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Global Bottom Sticky Info Bar */}
-      <footer className="pt-6 pb-28 border-t border-slate-100 dark:border-slate-900 bg-white/40 dark:bg-slate-950/40 relative z-10 text-center text-[10px] text-slate-400 font-bold uppercase tracking-wider flex flex-col items-center justify-center gap-1">
-        <span>SpendWise Shared Expense Tracker</span>
-        <span className="text-[9px] text-slate-400/60 normal-case font-medium">Version 1.0.001</span>
+      <footer className="pt-6 pb-28 border-t border-slate-100 dark:border-slate-900 bg-white/40 dark:bg-slate-950/40 relative z-10 text-center text-[10px] text-slate-400 font-bold uppercase tracking-wider flex flex-col items-center justify-center gap-1.5">
+        <span>Spendwise Shared Expense Tracker</span>
+        <div className="flex items-center gap-2 text-[9px] text-slate-400/70 normal-case font-medium">
+          <span>Version {CURRENT_APP_VERSION}</span>
+          <span>•</span>
+          <button
+            onClick={() => handleCheckForUpdates(true, false)}
+            disabled={isCheckingUpdate}
+            className="text-indigo-600 dark:text-indigo-400 hover:underline font-bold cursor-pointer"
+          >
+            {isCheckingUpdate ? 'Checking Play Store...' : 'Check Play Store Updates'}
+          </button>
+        </div>
       </footer>
 
       {/* Floating Bottom Sticky Navigation Toolbar */}
@@ -1843,6 +1948,14 @@ const App: React.FC = () => {
           })}
         </div>
       </div>
+
+      {/* Play Store App Update Modal */}
+      <AppUpdateModal
+        isOpen={showUpdateModal}
+        updateInfo={updateInfo}
+        onClose={() => setShowUpdateModal(false)}
+        darkMode={darkMode}
+      />
 
     </div>
   );

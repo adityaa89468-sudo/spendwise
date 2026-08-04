@@ -117,6 +117,19 @@ export interface Settlement {
   createdAt: string;
 }
 
+export interface AppUpdateInfo {
+  currentVersion: string;
+  latestVersion: string;
+  versionCode: number;
+  latestVersionCode: number;
+  updateAvailable: boolean;
+  forceUpdate: boolean;
+  releaseNotes: string[];
+  playStoreUrl: string;
+  releaseDate?: string;
+  downloadSize?: string;
+}
+
 declare global {
   interface ImportMeta {
     readonly env: Record<string, string | undefined>;

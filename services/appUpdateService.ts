@@ -2,8 +2,11 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { AppUpdateInfo } from '../types';
 
-export const CURRENT_APP_VERSION = '1.0.0';
-export const CURRENT_VERSION_CODE = 100;
+declare const __BUILD_GRADLE_VERSION_NAME__: string | undefined;
+declare const __BUILD_GRADLE_VERSION_CODE__: number | undefined;
+
+export const CURRENT_APP_VERSION = typeof __BUILD_GRADLE_VERSION_NAME__ !== 'undefined' ? __BUILD_GRADLE_VERSION_NAME__ : '1.0.0';
+export const CURRENT_VERSION_CODE = typeof __BUILD_GRADLE_VERSION_CODE__ !== 'undefined' ? __BUILD_GRADLE_VERSION_CODE__ : 100;
 export const PLAY_STORE_PACKAGE_ID = 'com.adityaproductionspendwise.app';
 export const DEFAULT_PLAY_STORE_URL = `https://play.google.com/store/apps/details?id=${PLAY_STORE_PACKAGE_ID}`;
 export const NATIVE_MARKET_URL = `market://details?id=${PLAY_STORE_PACKAGE_ID}`;

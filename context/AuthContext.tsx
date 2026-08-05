@@ -3,6 +3,8 @@ import {
   onAuthStateChanged, 
   User, 
   signInWithPopup, 
+  signInWithRedirect,
+  getRedirectResult,
   signOut as firebaseSignOut,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
@@ -85,6 +87,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         document.body.removeChild(script);
       }
     };
+  }, []);
+
+  useEffect(() => {
+    // Process redirect result if returning from an auth redirect (especially on mobile / Capacitor)
+    getRedirectResult(auth)
+      .then((result) => {
+        if (result?.user) {
+          console.log("Redirect sign-in success:", result.user.email);
+        }
+      })
+      .catch((error) => {
+        console.warn("Redirect sign-in result error:", error);
+      });
   }, []);
 
   useEffect(() => {
@@ -175,13 +190,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const signInWithGoogle = async () => {
+    const isNativeCapacitor = Boolean(
+      (window as any).Capacitor?.isNativePlatform?.() || 
+      (window as any).Capacitor?.getPlatform?.() === 'android' || 
+      window.location.protocol === 'capacitor:'
+    );
+
     try {
-      // Use standard popup sign in which works seamlessly on mobile and desktop
-      await signInWithPopup(auth, googleProvider);
+      if (isNativeCapacitor) {
+        // On native Android Capacitor APK, use signInWithRedirect to avoid white popup window issues
+        await signInWithRedirect(auth, googleProvider);
+      } else {
+        await signInWithPopup(auth, googleProvider);
+      }
     } catch (error: any) {
-      if (error.code === 'auth/popup-closed-by-user') {
+      if (
+        error.code === 'auth/popup-closed-by-user' || 
+        error.code === 'auth/cancelled-popup-request'
+      ) {
         console.log("Sign-in cancelled by user.");
         return;
+      }
+      // If popup was blocked or unsupported on native/browser, fallback to redirect
+      if (
+        error.code === 'auth/popup-blocked' || 
+        error.code === 'auth/operation-not-supported-in-this-environment'
+      ) {
+        try {
+          await signInWithRedirect(auth, googleProvider);
+          return;
+        } catch (redirectErr: any) {
+          console.error("Auth Redirect Error:", redirectErr);
+          throw redirectErr;
+        }
       }
       console.error("Auth Error:", error);
       throw error;

@@ -48,8 +48,7 @@ const handleFirestoreError = (error: unknown, operationType: OperationType, path
       isAnonymous: auth.currentUser?.isAnonymous,
     }
   };
-  console.error('Firestore Error:', JSON.stringify(errInfo));
-  throw new Error(JSON.stringify(errInfo));
+  console.warn('Firestore Warning/Error:', JSON.stringify(errInfo));
 };
 
 interface AuthContextType {
@@ -91,8 +90,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     let unsubscribeProfile: (() => void) | null = null;
 
+    // Safety fallback timeout to prevent infinite loading screen on cold start / offline
+    const safetyTimeout = setTimeout(() => {
+      setLoading(false);
+    }, 4000);
+
     // Listen for Firebase Auth state changes
     const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
+      clearTimeout(safetyTimeout);
       try {
         if (firebaseUser) {
           const mappedUser: SupabaseUser = {

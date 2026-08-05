@@ -44,7 +44,8 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ darkMode, setDarkMode }) => {
 
     switch (code) {
       case 'auth/invalid-email':
-        return 'Please enter a valid email address.';
+      case 'auth/invalid-credential':
+        return 'Invalid email or credentials. Please check and try again.';
       case 'auth/user-disabled':
         return 'This account has been disabled. Please contact support.';
       case 'auth/user-not-found':
@@ -56,10 +57,22 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ darkMode, setDarkMode }) => {
       case 'auth/weak-password':
         return 'Password is too weak. Please use at least 6 characters.';
       case 'auth/operation-not-allowed':
-        return 'Email/Password signup is not currently enabled.';
+        return 'Email/Password authentication is not currently enabled.';
       case 'auth/network-request-failed':
         return 'Network connection error. Check your internet connectivity.';
+      case 'auth/popup-closed-by-user':
+      case 'auth/cancelled-popup-request':
+        return ''; // User closed popup silently
+      case 'auth/popup-blocked':
+      case 'auth/operation-not-supported-in-this-environment':
+      case 'auth/unauthorized-domain':
+        return 'Google Sign-In popup is restricted in this app view. Please log in using Email & Password above.';
+      case 'auth/internal-error':
+        return 'Authentication service error. Please try again with Email & Password.';
       default:
+        if (message.toLowerCase().includes('popup') || message.toLowerCase().includes('domain')) {
+          return 'Google Sign-In is unavailable in this view. Please log in using Email & Password above.';
+        }
         return message || 'Authentication failed. Please try again.';
     }
   };

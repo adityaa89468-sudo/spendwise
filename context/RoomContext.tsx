@@ -95,8 +95,14 @@ export const RoomProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoadingGroup(true);
     const groupPath = `groups/${profile.currentGroupId}`;
     
+    // Safety fallback timeout to prevent infinite group sync spinner
+    const groupSafetyTimeout = setTimeout(() => {
+      setLoadingGroup(false);
+    }, 4000);
+
     // Listen to current Group document
     const unsubGroup = onSnapshot(doc(db, 'groups', profile.currentGroupId), (snapshot) => {
+      clearTimeout(groupSafetyTimeout);
       if (snapshot.exists()) {
         setCurrentGroup({ id: snapshot.id, ...snapshot.data() } as Group);
       } else {
@@ -105,6 +111,7 @@ export const RoomProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       setLoadingGroup(false);
     }, (error) => {
+      clearTimeout(groupSafetyTimeout);
       console.error("Firestore group listener error:", error);
       setLoadingGroup(false);
     });

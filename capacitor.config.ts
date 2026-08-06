@@ -5,7 +5,14 @@ const config: CapacitorConfig = {
   appName: 'Flat Hisab: Expense Splitter',
   webDir: 'dist',
   server: {
-    androidScheme: 'https'
+    androidScheme: 'https',
+    hostname: 'com.adityaproductionspendwise.app',
+    allowNavigation: [
+      '*.firebaseapp.com',
+      '*.googleapis.com',
+      '*.google.com',
+      'accounts.google.com'
+    ]
   },
   plugins: {
     AdMob: {

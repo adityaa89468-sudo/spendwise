@@ -33,12 +33,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, darkMode
       {/* Navigation Header */}
       <header className="py-5 px-6 max-w-6xl w-full mx-auto flex justify-between items-center relative z-10">
         <div className="flex items-center gap-2.5">
-          <div className="w-10 h-10 bg-indigo-650 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-500/10">
-            <SpendWiseLogo variant="icon" className="w-8 h-8 text-white" darkMode={true} />
-          </div>
+          <SpendWiseLogo variant="icon" className="w-10 h-10 shadow-md shadow-emerald-950/20 rounded-2xl" darkMode={darkMode} />
           <div>
             <h1 className="font-black text-base tracking-tight text-slate-900 dark:text-white leading-none">Flat Hisab</h1>
-            <span className="text-[9px] font-black tracking-widest uppercase text-indigo-600 dark:text-indigo-400">
+            <span className="text-[9px] font-black tracking-widest uppercase text-emerald-600 dark:text-emerald-400">
               Co-Living Ledger
             </span>
           </div>

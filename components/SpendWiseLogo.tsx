@@ -2,118 +2,104 @@ import React from 'react';
 
 interface SpendWiseLogoProps {
   className?: string;
-  variant?: 'icon' | 'full';
+  variant?: 'icon' | 'full' | 'mark';
   darkMode?: boolean;
+  withBackground?: boolean;
 }
 
 export const SpendWiseLogo: React.FC<SpendWiseLogoProps> = ({ 
   className = "w-9 h-9", 
   variant = "icon",
-  darkMode = false 
+  darkMode = false,
+  withBackground = true
 }) => {
-  // Luxe, high-contrast palette matching the emerald green and metallic gold logo
-  const emeraldStop1 = darkMode ? "#34D399" : "#1B533E";
-  const emeraldStop2 = darkMode ? "#10B981" : "#114734";
-  const emeraldStop3 = darkMode ? "#059669" : "#0A2F21";
+  // Brand palette matching the new official emblem
+  const forestGreenDark = "#06382D";
+  const forestGreenLight = "#0B4B3D";
 
-  const goldStop1 = darkMode ? "#FDE047" : "#E5D5B8";
-  const goldStop2 = darkMode ? "#FBBF24" : "#CEB78D";
-  const goldStop3 = darkMode ? "#F59E0B" : "#B29767";
-  const goldStop4 = darkMode ? "#D97706" : "#8A6E44";
+  const goldStart = "#E8AE52";
+  const goldMid = "#DE9F43";
+  const goldEnd = "#CF8F33";
 
-  if (variant === 'icon') {
+  const creamLight = "#FCF9EE";
+  const creamDark = "#F2EADA";
+
+  if (variant === 'icon' || variant === 'mark') {
     return (
       <svg 
-        viewBox="0 0 400 400" 
-        className={`${className} transition-all duration-300`}
+        viewBox="0 0 512 512" 
+        className={`${className} shrink-0 transition-transform duration-200`}
         fill="none" 
         xmlns="http://www.w3.org/2000/svg"
         referrerPolicy="no-referrer"
       >
         <defs>
-          {/* Champagne/Gold Gradient */}
-          <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor={goldStop1} />
-            <stop offset="35%" stopColor={goldStop2} />
-            <stop offset="70%" stopColor={goldStop3} />
-            <stop offset="100%" stopColor={goldStop4} />
-          </linearGradient>
-          
-          {/* Emerald Green Gradient */}
-          <linearGradient id="emeraldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor={emeraldStop1} />
-            <stop offset="50%" stopColor={emeraldStop2} />
-            <stop offset="100%" stopColor={emeraldStop3} />
+          <linearGradient id="swForestBg" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor={forestGreenLight} />
+            <stop offset="100%" stopColor={forestGreenDark} />
           </linearGradient>
 
-          {/* Real shadow to simulate the elegant 3D papercut look of the brand logo */}
-          <filter id="luxeShadow" x="-10%" y="-10%" width="120%" height="120%">
-            <feDropShadow dx="0" dy="5" stdDeviation="6" floodColor="#000000" floodOpacity="0.12" />
+          <linearGradient id="swGoldArrow" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor={goldStart} />
+            <stop offset="50%" stopColor={goldMid} />
+            <stop offset="100%" stopColor={goldEnd} />
+          </linearGradient>
+
+          <linearGradient id="swCream" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor={creamLight} />
+            <stop offset="100%" stopColor={creamDark} />
+          </linearGradient>
+
+          <filter id="swShadow" x="-10%" y="-10%" width="120%" height="120%">
+            <feDropShadow dx="0" dy="6" stdDeviation="8" floodColor="#000000" floodOpacity="0.16" />
           </filter>
         </defs>
 
-        <g filter="url(#luxeShadow)">
-          {/* THE HOUSE SILHOUETTE (Center Nest) */}
-          {/* House body facade fill */}
-          <path 
-            d="M 160,195 L 200,155 L 240,195 L 240,230 L 160,230 Z" 
-            fill={darkMode ? "#111827" : "#FCFBF7"} 
-            className="transition-colors duration-300"
+        {withBackground && (
+          <rect width="512" height="512" rx="108" fill="url(#swForestBg)" />
+        )}
+
+        <g filter={withBackground ? "url(#swShadow)" : undefined}>
+          {/* Chimney on right roof slope */}
+          <rect 
+            x="318" 
+            y="118" 
+            width="34" 
+            height="62" 
+            rx="3" 
+            fill={withBackground ? "url(#swCream)" : (darkMode ? "#E2E8F0" : "#0E5244")} 
           />
 
-          {/* Main House Roof structure (forms part of the monogram weave) */}
+          {/* House Gable Roof (Geometric roof slab) */}
           <path 
-            d="M 152,198 L 200,150 L 248,198" 
-            stroke="url(#emeraldGrad)" 
-            strokeWidth="16" 
-            strokeLinecap="round" 
-            strokeLinejoin="round" 
+            d="M 256,86 L 400,230 L 400,244 L 366,244 L 256,134 L 146,244 L 112,244 L 112,230 Z" 
+            fill={withBackground ? "url(#swCream)" : (darkMode ? "#F8FAFC" : "#0E5244")} 
           />
 
-          {/* Minimalist 4-Pane Square Window */}
-          <g transform="translate(191, 185)">
-            <rect x="0" y="0" width="18" height="18" rx="2" fill="url(#emeraldGrad)" />
-            <line x1="9" y1="0" x2="9" y2="18" stroke={darkMode ? "#111827" : "#FCFBF7"} strokeWidth="2.5" />
-            <line x1="0" y1="9" x2="18" y2="9" stroke={darkMode ? "#111827" : "#FCFBF7"} strokeWidth="2.5" />
+          {/* Attic 4-Pane Square Window */}
+          <g transform="translate(232, 176)">
+            <rect x="0" y="0" width="19" height="19" rx="2.5" fill={withBackground ? "url(#swCream)" : (darkMode ? "#F8FAFC" : "#0E5244")} />
+            <rect x="27" y="0" width="19" height="19" rx="2.5" fill={withBackground ? "url(#swCream)" : (darkMode ? "#F8FAFC" : "#0E5244")} />
+            <rect x="0" y="27" width="19" height="19" rx="2.5" fill={withBackground ? "url(#swCream)" : (darkMode ? "#F8FAFC" : "#0E5244")} />
+            <rect x="27" y="27" width="19" height="19" rx="2.5" fill={withBackground ? "url(#swCream)" : (darkMode ? "#F8FAFC" : "#0E5244")} />
           </g>
 
-          {/* THE MONOGRAM RIBBONS ("S" & "W" Interlocking loops) */}
-          
-          {/* S-Ribbon Upper Loop & Sweep */}
+          {/* Left Split Arrow (Cream / Off-White) */}
           <path 
-            d="M 215,115 C 160,110 110,140 110,190 C 110,240 160,250 200,250 C 240,250 245,215 215,190" 
-            stroke="url(#emeraldGrad)" 
-            strokeWidth="18" 
-            strokeLinecap="round" 
-            fill="none" 
-          />
-          
-          {/* S-Ribbon Gold Accent Ribbon Accent (interweaves for luxury 3D effect) */}
-          <path 
-            d="M 115,175 C 115,135 150,120 190,120" 
-            stroke="url(#goldGrad)" 
-            strokeWidth="12" 
-            strokeLinecap="round" 
-            fill="none" 
+            d="M 256,342 C 256,298 226,276 172,276 L 172,328 L 110,274 L 172,220 L 172,254 C 238,254 256,282 256,342 Z" 
+            fill={withBackground ? "url(#swCream)" : (darkMode ? "#F8FAFC" : "#0E5244")} 
           />
 
-          {/* W-Ribbon Loop (champagne gold loops that sweep down, up, and frame the right) */}
+          {/* Right Split Arrow (Golden Ochre) */}
           <path 
-            d="M 210,185 C 210,225 230,250 280,250 C 325,250 325,185 285,145 C 245,105 210,135 210,165 L 210,205" 
-            stroke="url(#goldGrad)" 
-            strokeWidth="18" 
-            strokeLinecap="round" 
-            strokeLinejoin="round" 
-            fill="none" 
+            d="M 256,342 C 256,298 286,276 340,276 L 340,328 L 402,274 L 340,220 L 340,254 C 274,254 256,282 256,342 Z" 
+            fill="url(#swGoldArrow)" 
           />
 
-          {/* Weaving Connector overpass */}
+          {/* Bottom Hexagon Chevron / Diamond Base */}
           <path 
-            d="M 190,250 C 205,250 215,240 215,220" 
-            stroke="url(#emeraldGrad)" 
-            strokeWidth="18" 
-            strokeLinecap="round" 
-            fill="none" 
+            d="M 184,334 L 256,406 L 328,334 L 304,320 L 256,368 L 208,320 Z" 
+            fill={withBackground ? "url(#swCream)" : (darkMode ? "#F8FAFC" : "#0E5244")} 
           />
         </g>
       </svg>
@@ -123,23 +109,23 @@ export const SpendWiseLogo: React.FC<SpendWiseLogoProps> = ({
   return (
     <div className={`flex flex-col items-center justify-center text-center p-6 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
       {/* Dynamic scaled logo */}
-      <div className="w-32 h-32 mb-4">
-        <SpendWiseLogo variant="icon" className="w-full h-full" darkMode={darkMode} />
+      <div className="w-28 h-28 mb-4 shadow-xl rounded-3xl overflow-hidden shadow-emerald-950/25">
+        <SpendWiseLogo variant="icon" className="w-full h-full" darkMode={darkMode} withBackground={true} />
       </div>
 
       {/* Main branded label */}
-      <div className="flex items-center gap-1.5 mt-2">
+      <div className="flex items-center gap-2 mt-2">
         <span className="text-3xl font-light tracking-wide text-emerald-800 dark:text-emerald-400 font-sans">
-          SPEND
+          FLAT
         </span>
-        <div className="w-[1px] h-8 bg-slate-300 dark:bg-slate-700 mx-1" />
+        <div className="w-[2px] h-7 bg-emerald-600/30 dark:bg-emerald-400/30 rounded-full mx-0.5" />
         <span className="text-3xl font-extrabold tracking-wide text-emerald-950 dark:text-white font-sans">
-          WISE
+          HISAB
         </span>
       </div>
 
       {/* Sub-label */}
-      <p className="text-[10px] font-black tracking-[0.25em] text-slate-400 dark:text-slate-500 uppercase mt-2.5 leading-none">
+      <p className="text-[11px] font-bold tracking-[0.25em] text-slate-400 dark:text-slate-400 uppercase mt-2.5 leading-none">
         Shared Expenses Made Simple
       </p>
     </div>

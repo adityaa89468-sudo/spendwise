@@ -13,7 +13,7 @@ const isNative = () => {
 export const initializeAdMob = async () => {
   if (!isNative()) return;
   
-  const isProduction = import.meta.env.VITE_ADMOB_PRODUCTION === 'true';
+  const isProduction = import.meta.env.VITE_ADMOB_PRODUCTION !== 'false';
   
   await AdMob.initialize({
     requestTrackingAuthorization: true,
@@ -44,10 +44,10 @@ export const showConsentForm = async () => {
 export const showBanner = async () => {
   if (!isNative()) return;
 
-  const isProduction = import.meta.env.VITE_ADMOB_PRODUCTION === 'true';
+  const isProduction = import.meta.env.VITE_ADMOB_PRODUCTION !== 'false';
 
   await AdMob.showBanner({
-    adId: import.meta.env.VITE_ADMOB_BANNER_ID || 'ca-app-pub-9364231981895017/7969280469',
+    adId: import.meta.env.VITE_ADMOB_BANNER_ID || 'ca-app-pub-9364231981895017/6262161138',
     adSize: BannerAdSize.ADAPTIVE_BANNER,
     position: BannerAdPosition.BOTTOM_CENTER,
     margin: 85, // Positioned safely above the bottom navigation bar
@@ -63,7 +63,7 @@ export const hideBanner = async () => {
 export const showRewardedAd = async (): Promise<AdMobRewardItem | null> => {
   if (!isNative()) return null;
 
-  const isProduction = import.meta.env.VITE_ADMOB_PRODUCTION === 'true';
+  const isProduction = import.meta.env.VITE_ADMOB_PRODUCTION !== 'false';
 
   try {
     await AdMob.prepareRewardVideoAd({
@@ -82,7 +82,7 @@ export const showRewardedAd = async (): Promise<AdMobRewardItem | null> => {
 export const prepareInterstitial = async () => {
   if (!isNative()) return;
 
-  const isProduction = import.meta.env.VITE_ADMOB_PRODUCTION === 'true';
+  const isProduction = import.meta.env.VITE_ADMOB_PRODUCTION !== 'false';
 
   try {
     await AdMob.prepareInterstitial({

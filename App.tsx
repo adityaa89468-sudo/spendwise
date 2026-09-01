@@ -449,10 +449,8 @@ const App: React.FC = () => {
 
         {/* Global Nav for onboarding */}
         <header className="py-6 px-6 max-w-4xl w-full mx-auto flex justify-between items-center relative z-25">
-          <div className="flex items-center gap-2">
-            <div className="w-9 h-9 bg-slate-100 dark:bg-slate-900 rounded-xl flex items-center justify-center shadow-sm">
-              <SpendWiseLogo variant="icon" className="w-7 h-7" darkMode={darkMode} />
-            </div>
+          <div className="flex items-center gap-2.5">
+            <SpendWiseLogo variant="icon" className="w-9 h-9 shadow-sm shadow-emerald-950/20 rounded-xl" darkMode={darkMode} />
             <div>
               <h2 className="font-extrabold text-sm text-slate-900 dark:text-white leading-none">Flat Hisab</h2>
               <span className="text-[10px] font-mono tracking-wider uppercase text-slate-400">Flatmate Ledger</span>
@@ -799,9 +797,7 @@ const App: React.FC = () => {
       <header className="sticky top-0 bg-white/70 dark:bg-slate-950/70 backdrop-blur-md border-b border-slate-100 dark:border-slate-900/60 py-4 px-6 relative z-30">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-slate-100 dark:bg-slate-900 rounded-xl flex items-center justify-center shadow-sm">
-              <SpendWiseLogo variant="icon" className="w-7 h-7" darkMode={darkMode} />
-            </div>
+            <SpendWiseLogo variant="icon" className="w-9 h-9 shadow-sm shadow-emerald-950/20 rounded-xl" darkMode={darkMode} />
             <div>
               <span className="block text-[8px] font-mono tracking-wider text-slate-400 dark:text-slate-500 uppercase font-black">
                 Active FLAT

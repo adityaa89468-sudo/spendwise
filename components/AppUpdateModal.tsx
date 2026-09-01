@@ -85,9 +85,7 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({
 
             {/* App Icon & Title */}
             <div className="flex items-center gap-4 relative z-10">
-              <div className="w-14 h-14 rounded-2xl bg-slate-900 p-2.5 shadow-xl border border-white/20 flex items-center justify-center shrink-0">
-                <SpendWiseLogo variant="icon" className="w-full h-full text-white" darkMode={true} />
-              </div>
+              <SpendWiseLogo variant="icon" className="w-14 h-14 rounded-2xl shadow-xl border border-white/20 shrink-0" darkMode={true} />
               <div>
                 <h3 className="text-xl font-black text-white leading-tight">
                   Update Available!

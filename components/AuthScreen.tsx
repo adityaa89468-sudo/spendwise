@@ -159,10 +159,8 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ darkMode, setDarkMode }) => {
       
       {/* Top Header - Icon / Theme Switcher */}
       <div className="max-w-md w-full mx-auto flex items-center justify-between pt-2">
-        <div className="flex items-center gap-2">
-          <div className="w-9 h-9 bg-slate-100 dark:bg-slate-900 rounded-xl flex items-center justify-center shadow-sm">
-            <SpendWiseLogo variant="icon" className="w-7 h-7" darkMode={darkMode} />
-          </div>
+        <div className="flex items-center gap-2.5">
+          <SpendWiseLogo variant="icon" className="w-9 h-9 shadow-sm shadow-emerald-950/20 rounded-xl" darkMode={darkMode} />
           <span className="font-black text-xs uppercase tracking-widest text-slate-400 dark:text-slate-500">
             Flat Hisab SecOps
           </span>
@@ -183,7 +181,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ darkMode, setDarkMode }) => {
           
           {/* Logo brand & greeting */}
           <div className="text-center mb-6 flex flex-col items-center">
-            <SpendWiseLogo variant="icon" className="w-20 h-20 mb-3" darkMode={darkMode} />
+            <SpendWiseLogo variant="icon" className="w-20 h-20 mb-3 shadow-xl shadow-emerald-950/25 rounded-3xl" darkMode={darkMode} />
             <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight leading-none mb-2">
               Flat Hisab
             </h1>

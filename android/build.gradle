@@ -25,9 +25,22 @@ allprojects {
 }
 
 subprojects {
-    tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
-        kotlinOptions {
-            suppressWarnings = true
+    afterEvaluate { project ->
+        tasks.withType(JavaCompile).configureEach {
+            options.compilerArgs << "-Xlint:none"
+            options.compilerArgs << "-nowarn"
+            options.warnings = false
+        }
+        tasks.matching { it.name.contains("Kotlin") || it.class.name.contains("Kotlin") }.configureEach { task ->
+            try {
+                if (task.hasProperty("kotlinOptions")) {
+                    task.kotlinOptions.suppressWarnings = true
+                }
+                if (task.hasProperty("compilerOptions")) {
+                    task.compilerOptions.suppressWarnings.set(true)
+                }
+            } catch (Exception ignored) {
+            }
         }
     }
 }

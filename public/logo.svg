@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- Deep forest emerald green background -->
+    <linearGradient id="forestBg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0B4B3D" />
+      <stop offset="100%" stop-color="#06382D" />
+    </linearGradient>
+
+    <!-- Warm golden ochre gradient for the right splitting arrow -->
+    <linearGradient id="goldArrow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E8AE52" />
+      <stop offset="50%" stop-color="#DE9F43" />
+      <stop offset="100%" stop-color="#CF8F33" />
+    </linearGradient>
+
+    <!-- Off-white cream color for house structure & left arrow -->
+    <linearGradient id="creamElem" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FBF8EE" />
+      <stop offset="100%" stop-color="#F2EADA" />
+    </linearGradient>
+  </defs>
+
+  <!-- Rounded App Icon Canvas -->
+  <rect width="512" height="512" rx="108" fill="url(#forestBg)" />
+
+  <g id="emblem">
+    <!-- Chimney on right roof slope -->
+    <rect x="318" y="118" width="34" height="62" rx="3" fill="url(#creamElem)" />
+
+    <!-- House Gable Roof (Thick geometric roof slab) -->
+    <path 
+      d="M 256,86 L 400,230 L 400,244 L 366,244 L 256,134 L 146,244 L 112,244 L 112,230 Z" 
+      fill="url(#creamElem)" 
+    />
+
+    <!-- Attic 4-Pane Square Window -->
+    <g transform="translate(232, 176)">
+      <rect x="0" y="0" width="19" height="19" rx="2" fill="url(#creamElem)" />
+      <rect x="27" y="0" width="19" height="19" rx="2" fill="url(#creamElem)" />
+      <rect x="0" y="27" width="19" height="19" rx="2" fill="url(#creamElem)" />
+      <rect x="27" y="27" width="19" height="19" rx="2" fill="url(#creamElem)" />
+    </g>
+
+    <!-- Left Split Arrow (Cream) -->
+    <path 
+      d="M 256,342 C 256,298 226,276 172,276 L 172,328 L 110,274 L 172,220 L 172,254 C 238,254 256,282 256,342 Z" 
+      fill="url(#creamElem)" 
+    />
+
+    <!-- Right Split Arrow (Golden Ochre) -->
+    <path 
+      d="M 256,342 C 256,298 286,276 340,276 L 340,328 L 402,274 L 340,220 L 340,254 C 274,254 256,282 256,342 Z" 
+      fill="url(#goldArrow)" 
+    />
+
+    <!-- Bottom Hexagon Chevron / Diamond Base -->
+    <path 
+      d="M 184,334 L 256,406 L 328,334 L 304,320 L 256,368 L 208,320 Z" 
+      fill="url(#creamElem)" 
+    />
+  </g>
+</svg>

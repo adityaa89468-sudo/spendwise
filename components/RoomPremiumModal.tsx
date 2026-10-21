@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Crown, 
@@ -7,9 +7,19 @@ import {
   Sparkles, 
   Users, 
   CheckCircle2, 
-  Smartphone
+  Smartphone,
+  AlertCircle,
+  RefreshCw
 } from 'lucide-react';
 import { Group } from '../types';
+import {
+  ROOM_PREMIUM_PRODUCT_ID,
+  ROOM_PREMIUM_BASE_PLAN_ID,
+  queryRoomPremiumSubscription,
+  purchaseRoomPremiumWithGooglePlay,
+  restoreRoomPremiumFromGooglePlay,
+  PlaySubscriptionDetails
+} from '../services/billingService';
 
 interface RoomPremiumModalProps {
   isOpen: boolean;
@@ -29,28 +39,63 @@ export const RoomPremiumModal: React.FC<RoomPremiumModalProps> = ({
   onSplitPremiumWithRoommates
 }) => {
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(false);
   const [autoSplitExpense, setAutoSplitExpense] = useState(true);
   const [showSuccessScreen, setShowSuccessScreen] = useState(false);
+  const [billingError, setBillingError] = useState<string | null>(null);
+  const [productDetails, setProductDetails] = useState<PlaySubscriptionDetails | null>(null);
+
+  useEffect(() => {
+    if (isOpen && !isRoomPremium) {
+      setBillingError(null);
+      queryRoomPremiumSubscription()
+        .then((details) => setProductDetails(details))
+        .catch(() => {});
+    }
+  }, [isOpen, isRoomPremium]);
 
   if (!isOpen || !currentGroup) return null;
 
   const memberCount = Math.max(1, currentGroup.members?.length || 1);
   const perMemberCost = Math.ceil(59 / memberCount);
+  const displayPrice = productDetails?.formattedPrice || '₹59';
 
   const handleCompletePurchase = async () => {
     setIsProcessing(true);
+    setBillingError(null);
     try {
-      // Google Play Billing verification
-      await new Promise((resolve) => setTimeout(resolve, 1100));
-      await onPurchaseSuccess();
-      if (autoSplitExpense && onSplitPremiumWithRoommates && memberCount > 1) {
-        await onSplitPremiumWithRoommates();
+      const result = await purchaseRoomPremiumWithGooglePlay();
+      if (result.purchased) {
+        await onPurchaseSuccess();
+        if (autoSplitExpense && onSplitPremiumWithRoommates && memberCount > 1) {
+          await onSplitPremiumWithRoommates();
+        }
+        setShowSuccessScreen(true);
       }
-      setShowSuccessScreen(true);
-    } catch (err) {
+    } catch (err: any) {
+      const msg = err?.message || 'Google Play Billing checkout could not be completed.';
       console.error('Failed to activate Room Premium:', err);
+      setBillingError(msg);
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  const handleRestoreSubscription = async () => {
+    setIsRestoring(true);
+    setBillingError(null);
+    try {
+      const res = await restoreRoomPremiumFromGooglePlay();
+      if (res.hasActiveSubscription) {
+        await onPurchaseSuccess();
+        setShowSuccessScreen(true);
+      } else {
+        setBillingError('No active Room Premium subscription found on your Google Play account.');
+      }
+    } catch (err: any) {
+      setBillingError(err?.message || 'Unable to check existing Google Play subscriptions.');
+    } finally {
+      setIsRestoring(false);
     }
   };
 
@@ -78,6 +123,7 @@ export const RoomPremiumModal: React.FC<RoomPremiumModalProps> = ({
             <button
               onClick={() => {
                 setShowSuccessScreen(false);
+                setBillingError(null);
                 onClose();
               }}
               className="absolute top-4 right-4 p-2 rounded-full bg-black/20 hover:bg-black/30 text-white transition-colors cursor-pointer"
@@ -153,6 +199,7 @@ export const RoomPremiumModal: React.FC<RoomPremiumModalProps> = ({
                 <button
                   onClick={() => {
                     setShowSuccessScreen(false);
+                    setBillingError(null);
                     onClose();
                   }}
                   className="w-full py-3.5 bg-slate-900 dark:bg-slate-800 text-white rounded-2xl text-xs font-black uppercase tracking-widest cursor-pointer"
@@ -169,7 +216,7 @@ export const RoomPremiumModal: React.FC<RoomPremiumModalProps> = ({
                       30-Day Room Pass
                     </span>
                     <div className="flex items-baseline gap-1.5 mt-0.5">
-                      <span className="text-2xl font-black text-slate-900 dark:text-white">₹59</span>
+                      <span className="text-2xl font-black text-slate-900 dark:text-white">{displayPrice}</span>
                       <span className="text-xs font-bold text-slate-500">/ month</span>
                     </div>
                   </div>
@@ -220,12 +267,24 @@ export const RoomPremiumModal: React.FC<RoomPremiumModalProps> = ({
                   </label>
                 )}
 
+                {billingError && (
+                  <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200/60 dark:border-rose-900/50 flex items-start gap-2 text-rose-600 dark:text-rose-400 text-[11px] font-bold">
+                    <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                    <div className="space-y-1">
+                      <p>{billingError}</p>
+                      <p className="text-[10px] font-mono opacity-80">
+                        Play Console Subscription ID: {ROOM_PREMIUM_PRODUCT_ID} (Base Plan: {ROOM_PREMIUM_BASE_PLAN_ID})
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 {/* Google Play Billing Exclusive Checkout Action */}
                 <div className="space-y-2 pt-1">
                   <button
                     type="button"
                     onClick={handleCompletePurchase}
-                    disabled={isProcessing}
+                    disabled={isProcessing || isRestoring}
                     className="w-full py-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-50 text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer"
                   >
                     {isProcessing ? (
@@ -233,13 +292,25 @@ export const RoomPremiumModal: React.FC<RoomPremiumModalProps> = ({
                     ) : (
                       <>
                         <Smartphone className="w-4 h-4" />
-                        <span>Pay ₹59 with Google Play Billing</span>
+                        <span>Subscribe {displayPrice}/mo via Google Play</span>
                       </>
                     )}
                   </button>
-                  <p className="text-[10px] text-center text-slate-400 font-semibold">
-                    Secured by Google Play Billing • Instant activation for all roommates
-                  </p>
+
+                  <div className="flex items-center justify-between pt-1">
+                    <p className="text-[10px] text-slate-400 font-semibold">
+                      Secured by Google Play Billing • Product ID: <span className="font-mono">{ROOM_PREMIUM_PRODUCT_ID}</span>
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleRestoreSubscription}
+                      disabled={isProcessing || isRestoring}
+                      className="text-[10px] font-extrabold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      <RefreshCw className={`w-3 h-3 ${isRestoring ? 'animate-spin' : ''}`} />
+                      <span>Restore</span>
+                    </button>
+                  </div>
                 </div>
               </>
             )}

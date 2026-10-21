@@ -1,7 +1,7 @@
 {
   "name": "spendwise",
   "private": true,
-  "version": "1.00.07",
+  "version": "1.00.09",
   "type": "module",
   "scripts": {
     "dev": "vite",

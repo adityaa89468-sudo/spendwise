@@ -190,6 +190,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const signInWithGoogle = async () => {
+    const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
+    // 1. Try Google Identity Services (GIS) One-Tap / Account Picker if Client ID is configured
+    if (googleClientId && window.google?.accounts?.id) {
+      try {
+        let gisResolved = false;
+        await new Promise<void>((resolve, reject) => {
+          window.google.accounts.id.initialize({
+            client_id: googleClientId,
+            callback: async (response: any) => {
+              gisResolved = true;
+              try {
+                setLoading(true);
+                const credential = GoogleAuthProvider.credential(response.credential);
+                await signInWithCredential(auth, credential);
+                resolve();
+              } catch (err) {
+                reject(err);
+              } finally {
+                setLoading(false);
+              }
+            }
+          });
+          window.google.accounts.id.prompt((notification: any) => {
+            if (!gisResolved && (notification.isNotDisplayed() || notification.isSkippedMoment())) {
+              reject(new Error("GIS_PROMPT_NOT_DISPLAYED"));
+            }
+          });
+        });
+        return;
+      } catch (gisErr) {
+        console.info("GIS One-Tap prompt not displayed or skipped, falling back to standard provider flow:", gisErr);
+      }
+    }
+
     const isNativeCapacitor = Boolean(
       (window as any).Capacitor?.isNativePlatform?.() || 
       (window as any).Capacitor?.getPlatform?.() === 'android' || 

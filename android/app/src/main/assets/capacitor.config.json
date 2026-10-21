@@ -1,0 +1,28 @@
+{
+	"appId": "com.adityaproductionspendwise.app",
+	"appName": "Flat Hisab",
+	"webDir": "dist",
+	"server": {
+		"androidScheme": "https",
+		"hostname": "com.adityaproductionspendwise.app",
+		"allowNavigation": [
+			"*.firebaseapp.com",
+			"tasky-alarm.firebaseapp.com",
+			"*.googleapis.com",
+			"*.google.com",
+			"accounts.google.com",
+			"identitytoolkit.googleapis.com",
+			"securetoken.googleapis.com"
+		]
+	},
+	"plugins": {
+		"AdMob": {
+			"androidAppId": "ca-app-pub-9364231981895017~7433331132"
+		},
+		"Keyboard": {
+			"resize": "body",
+			"style": "dark",
+			"resizeOnFullScreen": true
+		}
+	}
+}

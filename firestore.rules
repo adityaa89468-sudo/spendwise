@@ -1,0 +1,48 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Auth helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Allow connection testing
+    match /test/connection {
+      allow read: if true;
+    }
+
+    // User Profile Rules
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    // Flat Hisab Groups Rules
+    match /groups/{groupId} {
+      allow read, write: if isSignedIn();
+    }
+
+    // Shared Expenses nested under groups
+    match /groups/{groupId}/expenses/{expenseId} {
+      allow read, write: if isSignedIn();
+    }
+
+    // Shared Settlements nested under groups
+    match /groups/{groupId}/settlements/{settlementId} {
+      allow read, write: if isSignedIn();
+    }
+
+    // Shared Notifications nested under groups
+    match /groups/{groupId}/notifications/{notificationId} {
+      allow read, write: if isSignedIn();
+    }
+  }
+}

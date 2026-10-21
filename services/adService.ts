@@ -10,9 +10,35 @@ const isNative = () => {
   return Capacitor.isNativePlatform();
 };
 
-export const BANNER_AD_UNIT_ID = 'ca-app-pub-9364231981895017/6262161138';
-export const INTERSTITIAL_AD_UNIT_ID = 'ca-app-pub-9364231981895017/9460467949';
-export const REWARDED_AD_UNIT_ID = 'ca-app-pub-9364231981895017/3144105484';
+export const APP_OPEN_AD_UNIT_ID = import.meta.env.VITE_ADMOB_APP_OPEN_ID || 'ca-app-pub-9364231981895017/3883779302';
+export const BANNER_AD_UNIT_ID = import.meta.env.VITE_ADMOB_BANNER_ID || 'ca-app-pub-9364231981895017/6262161138';
+export const INTERSTITIAL_AD_UNIT_ID = import.meta.env.VITE_ADMOB_INTERSTITIAL_ID || 'ca-app-pub-9364231981895017/2896633718';
+export const REWARDED_AD_UNIT_ID = import.meta.env.VITE_ADMOB_REWARD_ID || 'ca-app-pub-9364231981895017/3144105484';
+
+let currentRoomHasPremium = false;
+
+try {
+  currentRoomHasPremium = localStorage.getItem('flathisab_room_premium') === 'true';
+} catch (e) {
+  // ignore storage errors
+}
+
+export const setRoomPremiumAdFreeState = async (isAdFree: boolean) => {
+  currentRoomHasPremium = isAdFree;
+  try {
+    localStorage.setItem('flathisab_room_premium', isAdFree ? 'true' : 'false');
+  } catch (e) {
+    // ignore storage errors
+  }
+
+  if (isAdFree) {
+    await removeBanner();
+  }
+};
+
+export const isRoomPremiumAdFree = (): boolean => {
+  return currentRoomHasPremium;
+};
 
 export const initializeAdMob = async () => {
   if (!isNative()) return;
@@ -33,6 +59,10 @@ export const initializeAdMob = async () => {
     } catch (error) {
       console.error('Consent error:', error);
     }
+
+    if (!currentRoomHasPremium) {
+      await prepareInterstitial();
+    }
   } catch (err) {
     console.error('AdMob initialization error:', err);
   }
@@ -48,16 +78,14 @@ export const showConsentForm = async () => {
 };
 
 export const showBanner = async () => {
-  if (!isNative()) return;
-
-  const adId = import.meta.env.VITE_ADMOB_BANNER_ID || BANNER_AD_UNIT_ID;
+  if (!isNative() || currentRoomHasPremium) return;
 
   try {
     await AdMob.showBanner({
-      adId,
+      adId: BANNER_AD_UNIT_ID,
       adSize: BannerAdSize.ADAPTIVE_BANNER,
       position: BannerAdPosition.BOTTOM_CENTER,
-      margin: 85, // Positioned safely above the bottom navigation bar
+      margin: 0,
       isTesting: false
     });
   } catch (err) {
@@ -74,14 +102,21 @@ export const hideBanner = async () => {
   }
 };
 
-export const showRewardedAd = async (): Promise<AdMobRewardItem | null> => {
-  if (!isNative()) return null;
+export const removeBanner = async () => {
+  if (!isNative()) return;
+  try {
+    await AdMob.removeBanner();
+  } catch (err) {
+    console.error('AdMob removeBanner error:', err);
+  }
+};
 
-  const adId = import.meta.env.VITE_ADMOB_REWARD_ID || REWARDED_AD_UNIT_ID;
+export const showRewardedAd = async (): Promise<AdMobRewardItem | null> => {
+  if (!isNative() || currentRoomHasPremium) return null;
 
   try {
     await AdMob.prepareRewardVideoAd({
-      adId,
+      adId: REWARDED_AD_UNIT_ID,
       isTesting: false
     });
     
@@ -94,13 +129,11 @@ export const showRewardedAd = async (): Promise<AdMobRewardItem | null> => {
 };
 
 export const prepareInterstitial = async () => {
-  if (!isNative()) return;
-
-  const adId = import.meta.env.VITE_ADMOB_INTERSTITIAL_ID || INTERSTITIAL_AD_UNIT_ID;
+  if (!isNative() || currentRoomHasPremium) return;
 
   try {
     await AdMob.prepareInterstitial({
-      adId,
+      adId: INTERSTITIAL_AD_UNIT_ID,
       isTesting: false
     });
   } catch (error) {
@@ -109,14 +142,13 @@ export const prepareInterstitial = async () => {
 };
 
 export const showInterstitialAd = async () => {
-  if (!isNative()) return;
+  if (!isNative() || currentRoomHasPremium) return;
 
   try {
-    // Attempt to show immediately (assumes prepared)
     await AdMob.showInterstitial();
+    await prepareInterstitial();
   } catch (error) {
     console.error('Interstitial Ad Error:', error);
-    // Fallback: prepare and try once more if it failed because it wasn't ready
     await prepareInterstitial();
     try {
       await AdMob.showInterstitial();
@@ -125,3 +157,4 @@ export const showInterstitialAd = async () => {
     }
   }
 };
+

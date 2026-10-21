@@ -25,9 +25,8 @@ import {
   MessageSquare,
   DollarSign,
   FileText,
-  DownloadCloud,
-  RefreshCw,
-  Download
+  Crown,
+  ShieldCheck
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation, Link } from 'react-router-dom';
@@ -37,13 +36,12 @@ import AuthScreen from './components/AuthScreen';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import TermsConditions from './components/TermsConditions';
 import { PullToRefresh } from './components/PullToRefresh';
-import { AppNotification, GroupMember, Expense, Settlement, AppUpdateInfo } from './types';
+import { AppNotification, GroupMember, Expense, Settlement } from './types';
 import { SpendWiseLogo } from './components/SpendWiseLogo';
 import { BannerAd } from './components/BannerAd';
 import { LandingPage } from './components/LandingPage';
-import { AppUpdateModal } from './components/AppUpdateModal';
-import { fetchAppUpdateInfo, setTestUpdateOverride, CURRENT_APP_VERSION } from './services/appUpdateService';
-import { initializeAdMob, showBanner } from './services/adService';
+import { RoomPremiumModal } from './components/RoomPremiumModal';
+import { initializeAdMob, showInterstitialAd } from './services/adService';
 
 const App: React.FC = () => {
   const { user, profile, loading, signOut, updateUserProfile } = useAuth();
@@ -61,6 +59,8 @@ const App: React.FC = () => {
     markNotificationRead,
     memberBalances,
     suggestedSettlements,
+    isRoomPremium,
+    purchaseRoomPremium,
     resetGroup,
     refreshData
   } = useRoom();
@@ -123,38 +123,12 @@ const App: React.FC = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
 
-  // Play Store App Update popup states
-  const [updateInfo, setUpdateInfo] = useState<AppUpdateInfo | null>(null);
-  const [showUpdateModal, setShowUpdateModal] = useState<boolean>(false);
-  const [isCheckingUpdate, setIsCheckingUpdate] = useState<boolean>(false);
-  const [updateToastMessage, setUpdateToastMessage] = useState<string | null>(null);
+  // Room Premium (₹59/mo Ad-Free for all members) modal state
+  const [showPremiumModal, setShowPremiumModal] = useState<boolean>(false);
 
-  const handleCheckForUpdates = async (manual: boolean = false, forceTest: boolean = false) => {
-    setIsCheckingUpdate(true);
-    try {
-      if (forceTest) {
-        setTestUpdateOverride(true, false, '1.1.0');
-      }
-      const info = await fetchAppUpdateInfo(manual || forceTest);
-      setUpdateInfo(info);
-      if (info.updateAvailable) {
-        setShowUpdateModal(true);
-      } else if (manual) {
-        setUpdateToastMessage(`Flat Hisab is up to date (v${info.currentVersion})`);
-        setTimeout(() => setUpdateToastMessage(null), 3500);
-      }
-    } catch (err) {
-      console.error("Failed to check for Play Store app updates:", err);
-    } finally {
-      setIsCheckingUpdate(false);
-    }
-  };
-
-  // Check for app updates on boot
+  // Initialize AdMob on boot (BannerAd component mounts the banner in its fixed slot)
   useEffect(() => {
-    handleCheckForUpdates(false, false);
     initializeAdMob()
-      .then(() => showBanner())
       .catch((err) => console.error("AdMob boot error:", err));
   }, []);
 
@@ -337,6 +311,9 @@ const App: React.FC = () => {
         : `Expense of ₹${Math.round(parsedAmount)} added! Split saved successfully.`;
 
       setExpenseSuccess(successMsg);
+      if (!isRoomPremium) {
+        showInterstitialAd().catch(() => {});
+      }
       // Back to dashboard
       setTimeout(() => {
         setExpenseSuccess('');
@@ -357,6 +334,9 @@ const App: React.FC = () => {
       // Register immediate database settlement log entries on the roommate network
       await addSettlement(fromId, fromName, toId, toName, amount);
       setCurrentSettlementTarget(null);
+      if (!isRoomPremium) {
+        showInterstitialAd().catch(() => {});
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -802,6 +782,20 @@ const App: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Room Premium Pass Status / Upgrade Button */}
+            <button
+              onClick={() => setShowPremiumModal(true)}
+              className={`px-3 py-2 rounded-xl border text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer ${
+                isRoomPremium
+                  ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200/60 dark:border-emerald-800/60 text-emerald-600 dark:text-emerald-400'
+                  : 'bg-amber-50 dark:bg-amber-950/40 border-amber-200/60 dark:border-amber-800/60 text-amber-600 dark:text-amber-400 hover:bg-amber-100/70'
+              }`}
+              title={isRoomPremium ? 'Room Premium Active (Ad-Free for all members)' : 'Remove Ads for Entire Room • ₹59/mo'}
+            >
+              <Crown className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden xs:inline">{isRoomPremium ? 'Ad-Free Room' : 'No Ads ₹59'}</span>
+            </button>
+
             {/* Dark mode */}
             <button 
               onClick={() => setDarkMode(!darkMode)}
@@ -893,7 +887,7 @@ const App: React.FC = () => {
       </header>
 
       {/* Primary Workspace container */}
-      <main className="flex-1 w-full max-w-4xl mx-auto px-6 pt-8 pb-24 relative z-10">
+      <main className="flex-1 w-full max-w-4xl mx-auto px-6 pt-8 pb-32 relative z-10">
 
         {/* Dynamic Navigation Tabs */}
         <div className="flex border-b border-slate-100 dark:border-slate-900 mb-8 overflow-x-auto gap-2 no-scrollbar">
@@ -916,11 +910,6 @@ const App: React.FC = () => {
               {tab.name}
             </button>
           ))}
-        </div>
-
-        {/* Banner Ad Segment (Highly polished and non-disturbing) */}
-        <div className="mb-8">
-          <BannerAd />
         </div>
 
         {/* Tab view routes */}
@@ -1280,10 +1269,6 @@ const App: React.FC = () => {
                   </button>
                 </form>
 
-                {/* Banner Ad Slot inside Split Tab */}
-                <div className="pt-2 border-t border-slate-50 dark:border-slate-850">
-                  <BannerAd />
-                </div>
               </div>
             </motion.div>
           )}
@@ -1470,11 +1455,6 @@ const App: React.FC = () => {
                   </div>
                 )}
               </AnimatePresence>
-
-              {/* Banner Ad Slot inside Settle Tab */}
-              <div className="pt-2">
-                <BannerAd />
-              </div>
             </motion.div>
           )}
 
@@ -1574,11 +1554,6 @@ const App: React.FC = () => {
                     </div>
                   ))
                 )}
-              </div>
-
-              {/* Banner Ad Slot inside History Tab */}
-              <div className="pt-2">
-                <BannerAd />
               </div>
             </motion.div>
             </PullToRefresh>
@@ -1791,41 +1766,45 @@ const App: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Banner Ad Slot inside Profile & Room Tab */}
-                <div className="pt-2">
-                  <BannerAd />
-                </div>
-
-                {/* Play Store App Updates & Production Ads Section */}
+                {/* Room Premium Membership Card (₹59/month for Entire Room) */}
                 <div className="pt-6 border-t border-slate-50 dark:border-slate-850/50 text-left">
                   <div className="flex items-center justify-between mb-3">
-                    <p className="text-[10px] text-slate-400 font-extrabold uppercase">Play Store & Ads Status</p>
-                    <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded-full border border-emerald-200/50 dark:border-emerald-800/40">
-                      PRODUCTION • LIVE ADS
+                    <p className="text-[10px] text-slate-400 font-extrabold uppercase">Room Ad-Free Membership</p>
+                    <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${
+                      isRoomPremium
+                        ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 border-emerald-200/50 dark:border-emerald-800/40'
+                        : 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/50 border-amber-200/50 dark:border-amber-800/40'
+                    }`}>
+                      {isRoomPremium ? '● AD-FREE ACTIVE' : 'FREE TIER (ADS ENABLED)'}
                     </span>
                   </div>
 
-                  <div className="p-4 bg-gradient-to-br from-slate-50 to-indigo-50/30 dark:from-slate-900/90 dark:to-indigo-950/20 border border-slate-200/70 dark:border-slate-800 rounded-2xl space-y-3">
+                  <div className="p-4 bg-gradient-to-br from-amber-50/70 to-indigo-50/30 dark:from-slate-900/90 dark:to-amber-950/15 border border-amber-200/60 dark:border-slate-800 rounded-2xl space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2.5">
-                        <div className="w-9 h-9 rounded-xl bg-emerald-600/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                          <DownloadCloud className="w-5 h-5" />
+                        <div className="w-9 h-9 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                          <Crown className="w-5 h-5" />
                         </div>
                         <div>
-                          <h5 className="text-xs font-extrabold text-slate-800 dark:text-white">Google Play Store Version {CURRENT_APP_VERSION}</h5>
-                          <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">● Production Mode Active (Testing Disabled)</p>
+                          <h5 className="text-xs font-extrabold text-slate-800 dark:text-white">
+                            {isRoomPremium ? `${currentGroup.name} is Ad-Free!` : 'Remove Ads for Entire Room • ₹59/mo'}
+                          </h5>
+                          <p className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold">
+                            {isRoomPremium
+                              ? `All ${currentGroup.members.length} roommates enjoy 0 ads in this room.`
+                              : `1 roommate subscribes → all ${currentGroup.members.length} roommates see zero ads!`}
+                          </p>
                         </div>
                       </div>
                     </div>
 
                     <div className="pt-1">
                       <button
-                        onClick={() => handleCheckForUpdates(true, false)}
-                        disabled={isCheckingUpdate}
-                        className="w-full py-2.5 px-3 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-sm transition-all active:scale-95 cursor-pointer"
+                        onClick={() => setShowPremiumModal(true)}
+                        className="w-full py-2.5 px-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white text-xs font-black uppercase tracking-wider rounded-xl flex items-center justify-center gap-1.5 shadow-sm transition-all active:scale-95 cursor-pointer"
                       >
-                        <RefreshCw className={`w-3.5 h-3.5 ${isCheckingUpdate ? 'animate-spin' : ''}`} />
-                        <span>{isCheckingUpdate ? 'Checking Play Store...' : 'Check Play Store Updates'}</span>
+                        <Crown className="w-3.5 h-3.5" />
+                        <span>{isRoomPremium ? 'View Room Premium Status' : 'Upgrade Room for ₹59 / Month'}</span>
                       </button>
                     </div>
                   </div>
@@ -1881,42 +1860,24 @@ const App: React.FC = () => {
 
       </main>
 
-      {/* Up-to-date Toast Banner */}
-      <AnimatePresence>
-        {updateToastMessage && (
-          <motion.div
-            initial={{ opacity: 0, y: -20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -20, scale: 0.95 }}
-            className="fixed top-5 left-1/2 -translate-x-1/2 z-50 bg-slate-900 text-white border border-slate-700/80 px-4 py-2.5 rounded-full shadow-2xl flex items-center gap-2.5 text-xs font-extrabold"
-          >
-            <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
-            <span>{updateToastMessage}</span>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Global Bottom Sticky Info Bar */}
-      <footer className="pt-6 pb-28 border-t border-slate-100 dark:border-slate-900 bg-white/40 dark:bg-slate-950/40 relative z-10 text-center text-[10px] text-slate-400 font-bold uppercase tracking-wider flex flex-col items-center justify-center gap-1.5">
-        <span>Flat Hisab: Expense Splitter</span>
-        <div className="flex items-center gap-2 text-[9px] text-slate-400/70 normal-case font-medium">
-          <span>Version {CURRENT_APP_VERSION}</span>
-          <span>•</span>
-          <button
-            onClick={() => handleCheckForUpdates(true, false)}
-            disabled={isCheckingUpdate}
-            className="text-indigo-600 dark:text-indigo-400 hover:underline font-bold cursor-pointer"
-          >
-            {isCheckingUpdate ? 'Checking Play Store...' : 'Check Play Store Updates'}
-          </button>
+      {/* Dedicated Empty Space & Footer at the bottom so no UI material is ever covered */}
+      <footer className="pt-6 pb-48 border-t border-slate-100 dark:border-slate-900 bg-white/40 dark:bg-slate-950/40 relative z-10 text-center text-[10px] text-slate-400 font-bold uppercase tracking-wider flex flex-col items-center justify-center gap-3 px-4">
+        <div className="w-full max-w-xl">
+          <BannerAd
+            onOpenPremiumModal={() => setShowPremiumModal(true)}
+            isOverlayOpen={Boolean(showPremiumModal || currentSettlementTarget || showNotifications || activeToast)}
+          />
         </div>
-        <p className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold normal-case">
-          Made by Aditya
-        </p>
+        <div className="flex flex-col items-center gap-1 pt-2">
+          <span>Flat Hisab</span>
+          <p className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold normal-case">
+            Made by Aditya
+          </p>
+        </div>
       </footer>
 
-      {/* Floating Bottom Sticky Navigation Toolbar */}
-      <div className="fixed bottom-4 inset-x-0 z-40 px-4 pointer-events-none flex justify-center">
+      {/* Bottom Sticky Navigation Toolbar positioned safely above the bottom empty ad slot */}
+      <div className={`fixed inset-x-0 z-40 px-4 pointer-events-none flex justify-center transition-all ${!isRoomPremium ? 'bottom-[72px]' : 'bottom-4'}`}>
         <div className="pointer-events-auto bg-white/95 dark:bg-slate-900/95 backdrop-blur-lg border border-slate-200/60 dark:border-slate-800/80 rounded-2xl md:rounded-3xl shadow-xl py-2.5 px-3 md:px-6 flex items-center justify-between gap-1 w-full max-w-md md:max-w-xl">
           {[
             { id: 'dashboard', name: 'Dashboard', icon: Coins },
@@ -1953,12 +1914,33 @@ const App: React.FC = () => {
         </div>
       </div>
 
-      {/* Play Store App Update Modal */}
-      <AppUpdateModal
-        isOpen={showUpdateModal}
-        updateInfo={updateInfo}
-        onClose={() => setShowUpdateModal(false)}
-        darkMode={darkMode}
+      {/* Room Premium (₹59/mo Ad-Free for Entire Room) Modal */}
+      <RoomPremiumModal
+        isOpen={showPremiumModal}
+        onClose={() => setShowPremiumModal(false)}
+        currentGroup={currentGroup}
+        isRoomPremium={isRoomPremium}
+        onPurchaseSuccess={purchaseRoomPremium}
+        onSplitPremiumWithRoommates={async () => {
+          if (!currentGroup || !user) return;
+          const members = currentGroup.members || [];
+          if (members.length <= 1) return;
+          const share = Number((59 / members.length).toFixed(2));
+          const splits = members.map(m => ({
+            uid: m.uid,
+            displayName: m.displayName,
+            amount: share
+          }));
+          await addExpense(
+            'Flat Hisab Room Premium (Ad-Free 1 Month)',
+            59,
+            'Subscription',
+            'equal',
+            splits,
+            user.uid,
+            profile?.displayName || 'Roommate'
+          );
+        }}
       />
 
     </div>

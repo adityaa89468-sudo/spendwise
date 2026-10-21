@@ -79,6 +79,11 @@ export interface Group {
   tasks: ChoreTask[];
   wishlist: WishlistItem[];
   eventFunds: EventFund[];
+  isPremium?: boolean;
+  premiumUntil?: string;
+  premiumPurchasedBy?: string;
+  premiumPurchasedByName?: string;
+  premiumPurchasedAt?: string;
   createdAt: string;
 }
 

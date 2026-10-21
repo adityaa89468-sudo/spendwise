@@ -54,6 +54,8 @@ interface RoomContextType {
   deleteEventFund: (fundId: string) => Promise<void>;
   suggestedSettlements: Array<{ fromId: string; fromName: string; toId: string; toName: string; amount: number }>;
   memberBalances: { [uid: string]: number };
+  isRoomPremium: boolean;
+  purchaseRoomPremium: () => Promise<void>;
   resetGroup: () => Promise<void>;
   refreshData: () => Promise<void>;
 }
@@ -80,6 +82,22 @@ export const RoomProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loadingGroup, setLoadingGroup] = useState(true);
   const [suggestedSettlements, setSuggestedSettlements] = useState<any[]>([]);
   const [memberBalances, setMemberBalances] = useState<{ [uid: string]: number }>({});
+
+  const isRoomPremium = Boolean(
+    user &&
+    currentGroup &&
+    currentGroup.isPremium &&
+    (!currentGroup.premiumUntil || new Date(currentGroup.premiumUntil).getTime() > Date.now())
+  );
+
+  useEffect(() => {
+    import('../services/adService').then(async (adService) => {
+      await adService.setRoomPremiumAdFreeState(isRoomPremium);
+      if (!isRoomPremium && user) {
+        await adService.prepareInterstitial();
+      }
+    }).catch(() => {});
+  }, [isRoomPremium, user, currentGroup?.id]);
 
   // 1. Listen for Group data when User's active group changes
   useEffect(() => {
@@ -120,8 +138,14 @@ export const RoomProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const expensesPath = `groups/${profile.currentGroupId}/expenses`;
     const unsubExpenses = onSnapshot(collection(db, expensesPath), (snapshot) => {
       const expList: Expense[] = [];
-      snapshot.forEach(doc => {
-        expList.push({ id: doc.id, ...doc.data() } as Expense);
+      snapshot.forEach(docSnap => {
+        const data = docSnap.data();
+        const safeSplits = Array.isArray(data.splits)
+          ? data.splits
+          : data.splits && typeof data.splits === 'object'
+          ? Object.values(data.splits).filter((s: any) => s && typeof s === 'object' && s.uid)
+          : [];
+        expList.push({ id: docSnap.id, ...data, splits: safeSplits } as Expense);
       });
       // Sort expenses by date descending
       expList.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -198,8 +222,16 @@ export const RoomProvider: React.FC<{ children: React.ReactNode }> = ({ children
         balances[payerId] += amount;
       }
 
-      // People who owe gets debited their share
-      (exp.splits || []).forEach(split => {
+      // People who owe gets debited their share (safely handle non-array or empty splits)
+      const validSplits = Array.isArray(exp.splits) && exp.splits.length > 0
+        ? exp.splits
+        : currentGroup.members.map(m => ({
+            uid: m.uid,
+            displayName: m.displayName,
+            amount: amount / Math.max(1, currentGroup.members.length)
+          }));
+
+      validSplits.forEach(split => {
         if (split && split.uid && balances[split.uid] !== undefined) {
           balances[split.uid] -= (split.amount || 0);
         }
@@ -386,6 +418,14 @@ export const RoomProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const expenseId = doc(collection(db, `groups/${profile.currentGroupId}/expenses`)).id;
 
+    const normalizedSplits: ExpenseSplit[] = Array.isArray(splits) && splits.length > 0
+      ? splits
+      : (currentGroup?.members || []).map(m => ({
+          uid: m.uid,
+          displayName: m.displayName,
+          amount: Number((amount / Math.max(1, currentGroup?.members.length || 1)).toFixed(2))
+        }));
+
     const newExpense: Expense = {
       id: expenseId,
       title,
@@ -395,7 +435,7 @@ export const RoomProvider: React.FC<{ children: React.ReactNode }> = ({ children
       category,
       date: new Date().toISOString().split('T')[0],
       splitType,
-      splits,
+      splits: normalizedSplits,
       createdAt: new Date().toISOString()
     };
 
@@ -403,22 +443,20 @@ export const RoomProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await setDoc(doc(db, 'groups', profile.currentGroupId, 'expenses', expenseId), newExpense);
 
       // Create live unread notification for all roommate friends in the splits list
-      if (Array.isArray(splits)) {
-        for (const split of splits) {
-          if (split.uid !== user.uid && split.uid !== newExpense.payerId) {
-            const notifId = doc(collection(db, 'groups', profile.currentGroupId, 'notifications')).id;
-            const notif: AppNotification = {
-              id: notifId,
-              groupId: profile.currentGroupId,
-              toUid: split.uid,
-              fromName: newExpense.payerName,
-              text: `You owe ${newExpense.payerName} ₹${Math.round(split.amount)} for "${title}".`,
-              type: 'expense',
-              createdAt: new Date().toISOString(),
-              read: false
-            };
-            await setDoc(doc(db, 'groups', profile.currentGroupId, 'notifications', notifId), notif);
-          }
+      for (const split of normalizedSplits) {
+        if (split.uid !== user.uid && split.uid !== newExpense.payerId) {
+          const notifId = doc(collection(db, 'groups', profile.currentGroupId, 'notifications')).id;
+          const notif: AppNotification = {
+            id: notifId,
+            groupId: profile.currentGroupId,
+            toUid: split.uid,
+            fromName: newExpense.payerName,
+            text: `You owe ${newExpense.payerName} ₹${Math.round(split.amount)} for "${title}".`,
+            type: 'expense',
+            createdAt: new Date().toISOString(),
+            read: false
+          };
+          await setDoc(doc(db, 'groups', profile.currentGroupId, 'notifications', notifId), notif);
         }
       }
     } catch (err) {
@@ -715,8 +753,14 @@ export const RoomProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // 2. Refresh expenses
       const expensesSnap = await getDocs(collection(db, 'groups', profile.currentGroupId, 'expenses'));
       const expList: Expense[] = [];
-      expensesSnap.forEach(doc => {
-        expList.push({ id: doc.id, ...doc.data() } as Expense);
+      expensesSnap.forEach(docSnap => {
+        const data = docSnap.data();
+        const safeSplits = Array.isArray(data.splits)
+          ? data.splits
+          : data.splits && typeof data.splits === 'object'
+          ? Object.values(data.splits).filter((s: any) => s && typeof s === 'object' && s.uid)
+          : [];
+        expList.push({ id: docSnap.id, ...data, splits: safeSplits } as Expense);
       });
       expList.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
       setExpenses(expList);
@@ -743,6 +787,47 @@ export const RoomProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (err) {
       console.error("Manual refresh data failed:", err);
       throw err;
+    }
+  };
+
+  const purchaseRoomPremium = async () => {
+    if (!user || !profile || !currentGroup) return;
+
+    const now = new Date();
+    const baseDate =
+      currentGroup.isPremium &&
+      currentGroup.premiumUntil &&
+      new Date(currentGroup.premiumUntil).getTime() > now.getTime()
+        ? new Date(currentGroup.premiumUntil)
+        : now;
+
+    const expiresAt = new Date(baseDate.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
+
+    try {
+      await updateDoc(doc(db, 'groups', currentGroup.id), {
+        isPremium: true,
+        premiumUntil: expiresAt,
+        premiumPurchasedBy: user.uid,
+        premiumPurchasedByName: profile.displayName || 'Roommate',
+        premiumPurchasedAt: now.toISOString(),
+      });
+
+      const otherMembers = (currentGroup.members || []).filter(m => m.uid !== user.uid);
+      await Promise.all(
+        otherMembers.map(member =>
+          addDoc(collection(db, `groups/${currentGroup.id}/notifications`), {
+            groupId: currentGroup.id,
+            toUid: member.uid,
+            fromName: profile.displayName || 'Roommate',
+            text: `🎉 ${profile.displayName || 'A roommate'} upgraded "${currentGroup.name}" to Room Premium (₹59/mo)! All ads are now removed for everyone in this room.`,
+            type: 'room',
+            createdAt: now.toISOString(),
+            read: false,
+          })
+        )
+      );
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, `groups/${currentGroup.id}`);
     }
   };
 
@@ -774,6 +859,8 @@ export const RoomProvider: React.FC<{ children: React.ReactNode }> = ({ children
       deleteEventFund,
       suggestedSettlements,
       memberBalances,
+      isRoomPremium,
+      purchaseRoomPremium,
       resetGroup,
       refreshData
     }}>

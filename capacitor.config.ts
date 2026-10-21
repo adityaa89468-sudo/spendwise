@@ -2,16 +2,19 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.adityaproductionspendwise.app',
-  appName: 'Flat Hisab: Expense Splitter',
+  appName: 'Flat Hisab',
   webDir: 'dist',
   server: {
     androidScheme: 'https',
     hostname: 'com.adityaproductionspendwise.app',
     allowNavigation: [
       '*.firebaseapp.com',
+      'tasky-alarm.firebaseapp.com',
       '*.googleapis.com',
       '*.google.com',
-      'accounts.google.com'
+      'accounts.google.com',
+      'identitytoolkit.googleapis.com',
+      'securetoken.googleapis.com'
     ]
   },
   plugins: {

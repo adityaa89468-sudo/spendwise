@@ -16,6 +16,7 @@ import {
 import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 import { auth, db, googleProvider } from '../lib/firebase';
 import { UserProfile } from '../types';
+import { Capacitor } from '@capacitor/core';
 
 declare global {
   interface Window {
@@ -190,15 +191,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const signInWithGoogle = async () => {
-    const isNativeCapacitor = Boolean(
-      (window as any).Capacitor?.isNativePlatform?.() || 
-      (window as any).Capacitor?.getPlatform?.() === 'android' || 
-      window.location.protocol === 'capacitor:'
-    );
+    const isNativeCapacitor = Capacitor.isNativePlatform() || 
+      window.location.protocol === 'capacitor:' || 
+      window.location.hostname === 'com.adityaproductionspendwise.app';
 
     try {
       if (isNativeCapacitor) {
-        // On native Android Capacitor APK, use signInWithRedirect to avoid white popup window issues
+        // On native Android Capacitor APK, signInWithPopup is blocked by Android WebView rules
+        // signInWithRedirect redirects directly inside the app
         await signInWithRedirect(auth, googleProvider);
       } else {
         await signInWithPopup(auth, googleProvider);
@@ -211,7 +211,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.log("Sign-in cancelled by user.");
         return;
       }
-      // If popup was blocked or unsupported on native/browser, fallback to redirect
+      // If popup was blocked or unsupported, fallback to redirect
       if (
         error.code === 'auth/popup-blocked' || 
         error.code === 'auth/operation-not-supported-in-this-environment'

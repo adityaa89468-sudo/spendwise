@@ -10,6 +10,29 @@ const isNative = () => {
   return Capacitor.isNativePlatform();
 };
 
+export const APP_OPEN_AD_UNIT_ID = import.meta.env.VITE_ADMOB_APP_OPEN_ID || 'ca-app-pub-9364231981895017/3883779302';
+export const BANNER_AD_UNIT_ID = import.meta.env.VITE_ADMOB_BANNER_ID || 'ca-app-pub-9364231981895017/6262161138';
+
+// In-memory & storage state tracking whether the currently joined room has active Premium (₹59/mo)
+let currentRoomHasPremium = false;
+
+export const setRoomPremiumAdFreeState = async (isAdFree: boolean) => {
+  currentRoomHasPremium = isAdFree;
+  try {
+    localStorage.setItem('flathisab_room_premium', isAdFree ? 'true' : 'false');
+  } catch (e) {
+    // ignore storage errors
+  }
+
+  if (isAdFree) {
+    await removeBanner();
+  }
+};
+
+export const isRoomPremiumAdFree = (): boolean => {
+  return currentRoomHasPremium;
+};
+
 export const initializeAdMob = async () => {
   if (!isNative()) return;
   
@@ -41,27 +64,44 @@ export const showConsentForm = async () => {
   }
 };
 
-export const showBanner = async () => {
-  if (!isNative()) return;
+export const showBanner = async (topMarginDp?: number) => {
+  if (!isNative() || currentRoomHasPremium) return;
 
   const isProduction = import.meta.env.VITE_ADMOB_PRODUCTION !== 'false';
 
-  await AdMob.showBanner({
-    adId: import.meta.env.VITE_ADMOB_BANNER_ID || 'ca-app-pub-9364231981895017/6262161138',
-    adSize: BannerAdSize.ADAPTIVE_BANNER,
-    position: BannerAdPosition.BOTTOM_CENTER,
-    margin: 85, // Positioned safely above the bottom navigation bar
-    isTesting: !isProduction 
-  });
+  try {
+    await AdMob.showBanner({
+      adId: BANNER_AD_UNIT_ID,
+      adSize: BannerAdSize.ADAPTIVE_BANNER,
+      position: topMarginDp !== undefined ? BannerAdPosition.TOP_CENTER : BannerAdPosition.BOTTOM_CENTER,
+      margin: topMarginDp !== undefined ? topMarginDp : 85,
+      isTesting: !isProduction
+    });
+  } catch (error) {
+    console.error('Show Banner Error:', error);
+  }
 };
 
 export const hideBanner = async () => {
   if (!isNative()) return;
-  await AdMob.hideBanner();
+  try {
+    await AdMob.hideBanner();
+  } catch (error) {
+    console.error('Hide Banner Error:', error);
+  }
+};
+
+export const removeBanner = async () => {
+  if (!isNative()) return;
+  try {
+    await AdMob.removeBanner();
+  } catch (error) {
+    console.error('Remove Banner Error:', error);
+  }
 };
 
 export const showRewardedAd = async (): Promise<AdMobRewardItem | null> => {
-  if (!isNative()) return null;
+  if (!isNative() || currentRoomHasPremium) return null;
 
   const isProduction = import.meta.env.VITE_ADMOB_PRODUCTION !== 'false';
 
@@ -80,7 +120,7 @@ export const showRewardedAd = async (): Promise<AdMobRewardItem | null> => {
 };
 
 export const prepareInterstitial = async () => {
-  if (!isNative()) return;
+  if (!isNative() || currentRoomHasPremium) return;
 
   const isProduction = import.meta.env.VITE_ADMOB_PRODUCTION !== 'false';
 
@@ -95,7 +135,7 @@ export const prepareInterstitial = async () => {
 };
 
 export const showInterstitialAd = async () => {
-  if (!isNative()) return;
+  if (!isNative() || currentRoomHasPremium) return;
 
   try {
     // Attempt to show immediately (assumes prepared)

@@ -79,6 +79,11 @@ export interface Group {
   tasks: ChoreTask[];
   wishlist: WishlistItem[];
   eventFunds: EventFund[];
+  isPremium?: boolean;
+  premiumUntil?: string; // ISO date string when the 1-month room premium expires
+  premiumPurchasedBy?: string; // uid of roommate who bought room premium
+  premiumPurchasedByName?: string; // displayName of roommate who bought room premium
+  premiumPurchasedAt?: string;
   createdAt: string;
 }
 

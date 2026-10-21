@@ -27,7 +27,8 @@ import {
   FileText,
   DownloadCloud,
   RefreshCw,
-  Download
+  Download,
+  Crown
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation, Link } from 'react-router-dom';
@@ -37,12 +38,12 @@ import AuthScreen from './components/AuthScreen';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import TermsConditions from './components/TermsConditions';
 import { PullToRefresh } from './components/PullToRefresh';
-import { AppNotification, GroupMember, Expense, Settlement, AppUpdateInfo } from './types';
+import { AppNotification, GroupMember, Expense, Settlement } from './types';
 import { SpendWiseLogo } from './components/SpendWiseLogo';
 import { BannerAd } from './components/BannerAd';
 import { LandingPage } from './components/LandingPage';
-import { AppUpdateModal } from './components/AppUpdateModal';
-import { fetchAppUpdateInfo, setTestUpdateOverride, CURRENT_APP_VERSION } from './services/appUpdateService';
+import { RoomPremiumModal } from './components/RoomPremiumModal';
+import { CURRENT_APP_VERSION } from './services/appUpdateService';
 
 const App: React.FC = () => {
   const { user, profile, loading, signOut, updateUserProfile } = useAuth();
@@ -60,6 +61,8 @@ const App: React.FC = () => {
     markNotificationRead,
     memberBalances,
     suggestedSettlements,
+    isRoomPremium,
+    purchaseRoomPremium,
     resetGroup,
     refreshData
   } = useRoom();
@@ -67,6 +70,7 @@ const App: React.FC = () => {
   // Navigation states
   const [activeTab, setActiveTab] = useState<'dashboard' | 'split' | 'settle' | 'history' | 'room'>('dashboard');
   const [showAuth, setShowAuth] = useState(false);
+  const [showPremiumModal, setShowPremiumModal] = useState(false);
   
   // Theme state
   const [darkMode, setDarkMode] = useState<boolean>(() => {
@@ -122,36 +126,12 @@ const App: React.FC = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
 
-  // Play Store App Update popup states
-  const [updateInfo, setUpdateInfo] = useState<AppUpdateInfo | null>(null);
-  const [showUpdateModal, setShowUpdateModal] = useState<boolean>(false);
-  const [isCheckingUpdate, setIsCheckingUpdate] = useState<boolean>(false);
-  const [updateToastMessage, setUpdateToastMessage] = useState<string | null>(null);
-
-  const handleCheckForUpdates = async (manual: boolean = false, forceTest: boolean = false) => {
-    setIsCheckingUpdate(true);
-    try {
-      if (forceTest) {
-        setTestUpdateOverride(true, false, '1.1.0');
-      }
-      const info = await fetchAppUpdateInfo(manual || forceTest);
-      setUpdateInfo(info);
-      if (info.updateAvailable) {
-        setShowUpdateModal(true);
-      } else if (manual) {
-        setUpdateToastMessage(`Flat Hisab is up to date (v${info.currentVersion})`);
-        setTimeout(() => setUpdateToastMessage(null), 3500);
-      }
-    } catch (err) {
-      console.error("Failed to check for Play Store app updates:", err);
-    } finally {
-      setIsCheckingUpdate(false);
-    }
-  };
-
-  // Check for app updates on boot
+  // Initialize AdMob on boot
   useEffect(() => {
-    handleCheckForUpdates(false, false);
+    import('./services/adService').then(async (adService) => {
+      await adService.initializeAdMob();
+      await adService.prepareInterstitial();
+    }).catch((err) => console.warn('AdMob init skipped:', err));
   }, []);
 
   // Active toast notification state for real-time split alerts
@@ -799,9 +779,16 @@ const App: React.FC = () => {
           <div className="flex items-center gap-3">
             <SpendWiseLogo variant="icon" className="w-9 h-9 shadow-sm shadow-emerald-950/20 rounded-xl" darkMode={darkMode} />
             <div>
-              <span className="block text-[8px] font-mono tracking-wider text-slate-400 dark:text-slate-500 uppercase font-black">
-                Active FLAT
-              </span>
+              <div className="flex items-center gap-1.5">
+                <span className="block text-[8px] font-mono tracking-wider text-slate-400 dark:text-slate-500 uppercase font-black">
+                  Active FLAT
+                </span>
+                {isRoomPremium && (
+                  <span className="inline-flex items-center gap-0.5 text-[7.5px] font-black uppercase tracking-wider bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 px-1.5 py-0.2 rounded-full">
+                    <Crown className="w-2.5 h-2.5" /> AD-FREE
+                  </span>
+                )}
+              </div>
               <h2 className="font-black text-sm text-slate-900 dark:text-white leading-none">
                 {currentGroup.name}
               </h2>
@@ -809,6 +796,20 @@ const App: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Room Premium ₹59/mo Ad-Free Badge / Button */}
+            <button
+              onClick={() => setShowPremiumModal(true)}
+              className={`px-2.5 py-2 rounded-xl border text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 shadow-sm transition-all cursor-pointer active:scale-95 ${
+                isRoomPremium
+                  ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200/60 dark:border-emerald-800/50 text-emerald-600 dark:text-emerald-400'
+                  : 'bg-gradient-to-r from-amber-500/10 to-orange-500/10 hover:from-amber-500/20 hover:to-orange-500/20 border-amber-500/30 text-amber-600 dark:text-amber-400'
+              }`}
+              title={isRoomPremium ? 'Room Premium Active (Ad-Free for all members)' : 'Remove Ads for all roommates in this room (₹59/mo)'}
+            >
+              <Crown className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden xs:inline">{isRoomPremium ? 'Room VIP' : 'No Ads ₹59'}</span>
+            </button>
+
             {/* Dark mode */}
             <button 
               onClick={() => setDarkMode(!darkMode)}
@@ -925,10 +926,12 @@ const App: React.FC = () => {
           ))}
         </div>
 
-        {/* Banner Ad Segment (Highly polished and non-disturbing) */}
-        <div className="mb-8">
-          <BannerAd />
-        </div>
+        {/* Banner Ad Segment (Hidden automatically for all roommates when Room Premium ₹59/mo is active) */}
+        {!isRoomPremium && (
+          <div className="mb-8">
+            <BannerAd onOpenPremiumModal={() => setShowPremiumModal(true)} />
+          </div>
+        )}
 
         {/* Tab view routes */}
         <div className="min-h-[400px]">
@@ -1519,7 +1522,7 @@ const App: React.FC = () => {
 
                         <p className="text-[10px] text-slate-450 leading-relaxed font-bold">
                           Paid by <span className="font-extrabold text-slate-655 dark:text-slate-350">{exp.payerName}</span> • 
-                          Split with: {exp.splits.map(s => s.displayName).join(', ')}
+                          Split with: {Array.isArray(exp.splits) ? exp.splits.map(s => s.displayName).join(', ') : 'All Roommates'}
                         </p>
 
                         <span className="text-[8px] font-mono text-slate-400 block">
@@ -1783,38 +1786,47 @@ const App: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Play Store App Updates & Production Ads Section */}
+                {/* Room Premium ₹59/mo Ad-Free Subscription Card */}
                 <div className="pt-6 border-t border-slate-50 dark:border-slate-850/50 text-left">
                   <div className="flex items-center justify-between mb-3">
-                    <p className="text-[10px] text-slate-400 font-extrabold uppercase">Play Store & Ads Status</p>
-                    <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded-full border border-emerald-200/50 dark:border-emerald-800/40">
-                      PRODUCTION • LIVE ADS
+                    <p className="text-[10px] text-slate-400 font-extrabold uppercase">Room Ad-Free Pass</p>
+                    <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${
+                      isRoomPremium
+                        ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 border-emerald-200/50 dark:border-emerald-800/40'
+                        : 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/50 border-amber-200/50 dark:border-amber-800/40'
+                    }`}>
+                      {isRoomPremium ? 'ROOM AD-FREE ACTIVE' : 'FREE TIER • ADS ENABLED'}
                     </span>
                   </div>
 
-                  <div className="p-4 bg-gradient-to-br from-slate-50 to-indigo-50/30 dark:from-slate-900/90 dark:to-indigo-950/20 border border-slate-200/70 dark:border-slate-800 rounded-2xl space-y-3">
-                    <div className="flex items-center justify-between">
+                  <div className="p-4 bg-gradient-to-br from-amber-50/70 via-orange-50/40 to-indigo-50/30 dark:from-amber-950/20 dark:via-slate-900/90 dark:to-indigo-950/20 border border-amber-200/60 dark:border-amber-800/40 rounded-2xl space-y-3">
+                    <div className="flex items-start justify-between gap-3">
                       <div className="flex items-center gap-2.5">
-                        <div className="w-9 h-9 rounded-xl bg-emerald-600/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                          <DownloadCloud className="w-5 h-5" />
+                        <div className="w-10 h-10 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                          <Crown className="w-5 h-5" />
                         </div>
                         <div>
-                          <h5 className="text-xs font-extrabold text-slate-800 dark:text-white">Google Play Store Version {CURRENT_APP_VERSION}</h5>
-                          <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">● Production Mode Active (Testing Disabled)</p>
+                          <h5 className="text-xs font-extrabold text-slate-800 dark:text-white">
+                            {isRoomPremium ? 'Room Premium Active (Zero Ads)' : 'Remove Ads for Entire Room • ₹59/mo'}
+                          </h5>
+                          <p className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold mt-0.5">
+                            {isRoomPremium
+                              ? `Purchased by ${currentGroup.premiumPurchasedByName || 'Roommate'} • Valid till ${
+                                  currentGroup.premiumUntil ? new Date(currentGroup.premiumUntil).toLocaleDateString() : '30 Days'
+                                }`
+                              : `1 roommate buys → All ${currentGroup.members.length} roommates in "${currentGroup.name}" see zero ads!`}
+                          </p>
                         </div>
                       </div>
                     </div>
 
-                    <div className="pt-1">
-                      <button
-                        onClick={() => handleCheckForUpdates(true, false)}
-                        disabled={isCheckingUpdate}
-                        className="w-full py-2.5 px-3 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-sm transition-all active:scale-95 cursor-pointer"
-                      >
-                        <RefreshCw className={`w-3.5 h-3.5 ${isCheckingUpdate ? 'animate-spin' : ''}`} />
-                        <span>{isCheckingUpdate ? 'Checking Play Store...' : 'Check Play Store Updates'}</span>
-                      </button>
-                    </div>
+                    <button
+                      onClick={() => setShowPremiumModal(true)}
+                      className="w-full py-2.5 px-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white text-xs font-black uppercase tracking-wider rounded-xl flex items-center justify-center gap-1.5 shadow-sm transition-all active:scale-95 cursor-pointer"
+                    >
+                      <Crown className="w-3.5 h-3.5" />
+                      <span>{isRoomPremium ? 'View Room Premium Pass' : 'Upgrade Room for ₹59 / Month'}</span>
+                    </button>
                   </div>
                 </div>
 
@@ -1868,34 +1880,11 @@ const App: React.FC = () => {
 
       </main>
 
-      {/* Up-to-date Toast Banner */}
-      <AnimatePresence>
-        {updateToastMessage && (
-          <motion.div
-            initial={{ opacity: 0, y: -20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -20, scale: 0.95 }}
-            className="fixed top-5 left-1/2 -translate-x-1/2 z-50 bg-slate-900 text-white border border-slate-700/80 px-4 py-2.5 rounded-full shadow-2xl flex items-center gap-2.5 text-xs font-extrabold"
-          >
-            <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
-            <span>{updateToastMessage}</span>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* Global Bottom Sticky Info Bar */}
       <footer className="pt-6 pb-28 border-t border-slate-100 dark:border-slate-900 bg-white/40 dark:bg-slate-950/40 relative z-10 text-center text-[10px] text-slate-400 font-bold uppercase tracking-wider flex flex-col items-center justify-center gap-1.5">
         <span>Flat Hisab: Expense Splitter</span>
         <div className="flex items-center gap-2 text-[9px] text-slate-400/70 normal-case font-medium">
           <span>Version {CURRENT_APP_VERSION}</span>
-          <span>•</span>
-          <button
-            onClick={() => handleCheckForUpdates(true, false)}
-            disabled={isCheckingUpdate}
-            className="text-indigo-600 dark:text-indigo-400 hover:underline font-bold cursor-pointer"
-          >
-            {isCheckingUpdate ? 'Checking Play Store...' : 'Check Play Store Updates'}
-          </button>
         </div>
         <p className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold normal-case">
           Made by Aditya
@@ -1940,12 +1929,29 @@ const App: React.FC = () => {
         </div>
       </div>
 
-      {/* Play Store App Update Modal */}
-      <AppUpdateModal
-        isOpen={showUpdateModal}
-        updateInfo={updateInfo}
-        onClose={() => setShowUpdateModal(false)}
-        darkMode={darkMode}
+      {/* Room Premium ₹59/mo Ad-Free Modal */}
+      <RoomPremiumModal
+        isOpen={showPremiumModal}
+        onClose={() => setShowPremiumModal(false)}
+        currentGroup={currentGroup}
+        isRoomPremium={isRoomPremium}
+        onPurchaseSuccess={purchaseRoomPremium}
+        onSplitPremiumWithRoommates={async () => {
+          const members = currentGroup.members || [];
+          const shareAmt = Number((59 / Math.max(1, members.length)).toFixed(2));
+          const equalSplits = members.map(m => ({
+            uid: m.uid,
+            displayName: m.displayName,
+            amount: shareAmt
+          }));
+          await addExpense(
+            'Flat Hisab Room Premium (Ad-Free Pass)',
+            59,
+            'Utilities',
+            'equal',
+            equalSplits
+          );
+        }}
       />
 
     </div>

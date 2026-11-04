@@ -15,6 +15,8 @@
 
 # Native Custom Plugins
 -keep class com.adityaproductionspendwise.app.PlayBillingPlugin { *; }
+-keep class com.adityaproductionspendwise.app.NativeGoogleAuthPlugin { *; }
+-keep class com.google.android.gms.auth.api.signin.** { *; }
 
 # Google Play Services & AdMob
 -keep class com.google.android.gms.ads.** { *; }

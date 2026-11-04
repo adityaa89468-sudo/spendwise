@@ -313,7 +313,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ darkMode, setDarkMode }) => {
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
                         autoComplete="name"
-                        className="w-full text-xs font-bold pl-11 pr-4 py-3.5 bg-slate-55 dark:bg-slate-950 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-100 border border-slate-100 dark:border-slate-850 dark:text-white"
+                        className="w-full text-xs font-bold pl-11 pr-4 py-3.5 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 border border-slate-200 dark:border-slate-800 shadow-xs"
                       />
                     </div>
                   </motion.div>
@@ -338,7 +338,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ darkMode, setDarkMode }) => {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     autoComplete="username email"
-                    className="w-full text-xs font-bold pl-11 pr-4 py-3.5 bg-slate-55 dark:bg-slate-950 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-100 border border-slate-100 dark:border-slate-855 dark:text-white"
+                    className="w-full text-xs font-bold pl-11 pr-4 py-3.5 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 border border-slate-200 dark:border-slate-800 shadow-xs"
                   />
                 </div>
               </div>
@@ -377,7 +377,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ darkMode, setDarkMode }) => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     autoComplete={authMode === 'signup' ? 'new-password' : 'current-password'}
-                    className="w-full text-xs font-bold pl-11 pr-10 py-3.5 bg-slate-55 dark:bg-slate-950 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-100 border border-slate-100 dark:border-slate-855 dark:text-white"
+                    className="w-full text-xs font-bold pl-11 pr-10 py-3.5 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 border border-slate-200 dark:border-slate-800 shadow-xs"
                   />
                   <button
                     type="button"
@@ -419,7 +419,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ darkMode, setDarkMode }) => {
                 type="button"
                 onClick={handleGoogleSignIn}
                 disabled={isSubmitting}
-                className="w-full py-3.5 bg-white dark:bg-slate-950 text-slate-700 dark:text-slate-300 border border-slate-100 dark:border-slate-855 hover:bg-slate-50 dark:hover:bg-slate-900/60 font-black uppercase tracking-widest text-2xs rounded-2xl shadow-sm transition-all active:scale-95 flex items-center justify-center gap-2.5 cursor-pointer"
+                className="w-full py-3.5 bg-white dark:bg-slate-950 text-slate-700 dark:text-slate-300 border border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900/60 font-black uppercase tracking-widest text-2xs rounded-2xl shadow-sm transition-all active:scale-95 flex items-center justify-center gap-2.5 cursor-pointer"
               >
                 <img 
                   src="https://www.google.com/favicon.ico" 
@@ -448,7 +448,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ darkMode, setDarkMode }) => {
                       placeholder="contact@yourdomain.com"
                       value={resetEmail}
                       onChange={(e) => setResetEmail(e.target.value)}
-                      className="w-full text-xs font-bold pl-11 pr-4 py-3.5 bg-slate-55 dark:bg-slate-950 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-100 border border-slate-100 dark:border-slate-855 dark:text-white"
+                      className="w-full text-xs font-bold pl-11 pr-4 py-3.5 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 border border-slate-200 dark:border-slate-800 shadow-xs"
                     />
                   </div>
                 </div>

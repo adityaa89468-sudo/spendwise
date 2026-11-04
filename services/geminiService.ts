@@ -156,7 +156,7 @@ export const analyzeReceipt = async (imageFile: File | null, fileName: string): 
     const base64Data = await base64Promise;
 
     const response = await client.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: "gemini-2.5-flash",
       contents: {
         parts: [
           {
@@ -203,7 +203,7 @@ export const chatWithAssistant = async (message: string, currentExpensesTotal: n
 
   try {
     const response = await client.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: "gemini-2.5-flash",
       contents: message,
       config: {
         systemInstruction: `You are Flat Hisab AI assistant. You help hostel/roommates manage shared expenses, reduce debt disputes, and live economically. Keeps answers student-friendly, encouraging, helpful, and concise. Your group's total spending stands at ₹${currentExpensesTotal}.`
@@ -230,7 +230,7 @@ export const parseVoiceInput = async (spokenText: string): Promise<any> => {
 
   try {
     const response = await client.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: "gemini-2.5-flash",
       contents: `Parse this transcribed voice expense entry: "${spokenText}".
       Return a solid JSON format:
       {

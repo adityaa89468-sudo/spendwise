@@ -192,7 +192,51 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signInWithGoogle = async () => {
     const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
-    // 1. Try Google Identity Services (GIS) One-Tap / Account Picker if Client ID is configured
+    const isNativeCapacitor = Boolean(
+      (window as any).Capacitor?.isNativePlatform?.() ||
+      (window as any).Capacitor?.getPlatform?.() === 'android' ||
+      window.location.protocol === 'capacitor:'
+    );
+
+    // 1. Try Native Android Google Auth plugin if running in Capacitor
+    if (isNativeCapacitor && (window as any).Capacitor?.Plugins?.NativeGoogleAuth) {
+      const activeClientId = googleClientId || '733361691954-33lme627bg6bm5bp4i0964uaqnphu697.apps.googleusercontent.com';
+      try {
+        const res = await (window as any).Capacitor.Plugins.NativeGoogleAuth.signIn({
+          serverClientId: activeClientId
+        });
+        if (res?.idToken) {
+          setLoading(true);
+          const credential = GoogleAuthProvider.credential(res.idToken);
+          const userCredential = await signInWithCredential(auth, credential);
+          if (userCredential?.user) {
+            const mappedUser: SupabaseUser = {
+              uid: userCredential.user.uid,
+              email: userCredential.user.email,
+              displayName: userCredential.user.displayName,
+            };
+            setUser(mappedUser);
+          }
+          return;
+        }
+      } catch (nativeErr: any) {
+        console.error("Native Google Auth error:", nativeErr);
+        const errMsg = nativeErr?.message || String(nativeErr);
+        if (
+          errMsg.includes("cancelled") ||
+          errMsg.includes("Code 12501") ||
+          errMsg.includes("12501")
+        ) {
+          console.log("Native Google Sign-In cancelled by user.");
+          return;
+        }
+        throw new Error(errMsg || "Google Sign-In failed.");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    // 2. Try Google Identity Services (GIS) One-Tap / Account Picker if Client ID is configured
     if (googleClientId && window.google?.accounts?.id) {
       try {
         let gisResolved = false;
@@ -225,12 +269,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
-    const isNativeCapacitor = Boolean(
-      (window as any).Capacitor?.isNativePlatform?.() || 
-      (window as any).Capacitor?.getPlatform?.() === 'android' || 
-      window.location.protocol === 'capacitor:'
-    );
-
     try {
       if (isNativeCapacitor) {
         try {
@@ -245,7 +283,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } catch (popupErr: any) {
           if (
             popupErr.code === 'auth/popup-blocked' ||
-            popupErr.code === 'auth/operation-not-supported-in-this-environment'
+            popupErr.code === 'operation-not-supported-in-this-environment'
           ) {
             await signInWithRedirect(auth, googleProvider);
           } else {

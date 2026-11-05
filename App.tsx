@@ -26,7 +26,8 @@ import {
   DollarSign,
   FileText,
   Crown,
-  ShieldCheck
+  ShieldCheck,
+  Flame
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation, Link } from 'react-router-dom';
@@ -41,10 +42,12 @@ import { SpendWiseLogo } from './components/SpendWiseLogo';
 import { BannerAd } from './components/BannerAd';
 import { LandingPage } from './components/LandingPage';
 import { RoomPremiumModal } from './components/RoomPremiumModal';
+import { AdminDashboard } from './components/AdminDashboard';
+import { StreaksAndCampaigns } from './components/StreaksAndCampaigns';
 import { initializeAdMob, showInterstitialAd } from './services/adService';
 
 const App: React.FC = () => {
-  const { user, profile, loading, signOut, updateUserProfile } = useAuth();
+  const { user, profile, loading, isAdminSession, signOut, updateUserProfile } = useAuth();
   const { 
     currentGroup, 
     expenses, 
@@ -66,7 +69,7 @@ const App: React.FC = () => {
   } = useRoom();
 
   // Navigation states
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'split' | 'settle' | 'history' | 'room'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'split' | 'settle' | 'history' | 'campaigns' | 'room'>('dashboard');
   const [showAuth, setShowAuth] = useState(false);
   
   // Theme state
@@ -212,6 +215,7 @@ const App: React.FC = () => {
       await createGroup(newRoomName.trim());
       setRoomSuccess(`Room "${newRoomName}" created successfully!`);
       setNewRoomName('');
+      setActiveTab('campaigns');
     } catch (err: any) {
       setRoomError('Failed to create Room. Try again.');
       console.error(err);
@@ -236,6 +240,7 @@ const App: React.FC = () => {
         setJoinCodeInput('');
         setShowInvitePrompt(false);
         setInviteJoinCode(null);
+        setActiveTab('campaigns');
       } else {
         setRoomError('Invalid Room code. Verify the 6-digit invite.');
       }
@@ -386,7 +391,7 @@ const App: React.FC = () => {
   }
   
   // Loading skeleton screen
-  if (loading || (user && loadingGroup)) {
+  if (loading || (user && !isAdminSession && loadingGroup)) {
     return (
       <div className={`min-h-screen flex flex-col justify-center items-center ${darkMode ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-800'}`}>
         <div className="space-y-4 text-center">
@@ -409,6 +414,18 @@ const App: React.FC = () => {
       <div className="relative animate-fade-in">
         <AuthScreen darkMode={darkMode} setDarkMode={setDarkMode} />
       </div>
+    );
+  }
+
+  // Logged in via Admin Credentials (adityaa89468@gmail.com + 84 blades arc-flow) -> Open ONLY the Admin Panel
+  if (isAdminSession && user.email?.toLowerCase() === 'adityaa89468@gmail.com') {
+    return (
+      <AdminDashboard
+        darkMode={darkMode}
+        setDarkMode={setDarkMode}
+        onSignOut={signOut}
+        adminEmail={user.email}
+      />
     );
   }
 
@@ -893,6 +910,7 @@ const App: React.FC = () => {
         <div className="flex border-b border-slate-100 dark:border-slate-900 mb-8 overflow-x-auto gap-2 no-scrollbar">
           {[
             { id: 'dashboard', name: 'Dashboard' },
+            { id: 'campaigns', name: '🔥 Streaks & Campaigns' },
             { id: 'split', name: '+ Split Bill' },
             { id: 'settle', name: 'Settle Debts' },
             { id: 'history', name: 'History Logs' },
@@ -1856,12 +1874,17 @@ const App: React.FC = () => {
             </motion.div>
           )}
 
+          {/* TAB 6: DAILY STREAK COUNTER & LIVE CAMPAIGNS */}
+          {activeTab === 'campaigns' && (
+            <StreaksAndCampaigns />
+          )}
+
         </div>
 
       </main>
 
-      {/* Dedicated Empty Space & Footer at the bottom so no UI material is ever covered */}
-      <footer className="pt-6 pb-48 border-t border-slate-100 dark:border-slate-900 bg-white/40 dark:bg-slate-950/40 relative z-10 text-center text-[10px] text-slate-400 font-bold uppercase tracking-wider flex flex-col items-center justify-center gap-3 px-4">
+      {/* Inline Ad Slot & Footer at the bottom of the page flow */}
+      <footer className="pt-6 pb-28 border-t border-slate-100 dark:border-slate-900 bg-white/40 dark:bg-slate-950/40 relative z-10 text-center text-[10px] text-slate-400 font-bold uppercase tracking-wider flex flex-col items-center justify-center gap-3 px-4">
         <div className="w-full max-w-xl">
           <BannerAd
             onOpenPremiumModal={() => setShowPremiumModal(true)}
@@ -1876,11 +1899,15 @@ const App: React.FC = () => {
         </div>
       </footer>
 
-      {/* Bottom Sticky Navigation Toolbar positioned safely above the bottom empty ad slot */}
-      <div className={`fixed inset-x-0 z-40 px-4 pointer-events-none flex justify-center transition-all ${!isRoomPremium ? 'bottom-[72px]' : 'bottom-4'}`}>
-        <div className="pointer-events-auto bg-white/95 dark:bg-slate-900/95 backdrop-blur-lg border border-slate-200/60 dark:border-slate-800/80 rounded-2xl md:rounded-3xl shadow-xl py-2.5 px-3 md:px-6 flex items-center justify-between gap-1 w-full max-w-md md:max-w-xl">
+      {/* Bottom Sticky Navigation Toolbar */}
+      <div className="fixed inset-x-0 bottom-4 z-40 px-4 pointer-events-none flex justify-center transition-all">
+        <div
+          id="bottom-nav-bar"
+          className="pointer-events-auto bg-white/95 dark:bg-slate-900/95 backdrop-blur-lg border border-slate-200/60 dark:border-slate-800/80 rounded-2xl md:rounded-3xl shadow-xl py-2.5 px-3 md:px-6 flex items-center justify-between gap-1 w-full max-w-md md:max-w-xl"
+        >
           {[
             { id: 'dashboard', name: 'Dashboard', icon: Coins },
+            { id: 'campaigns', name: 'Streaks', icon: Flame },
             { id: 'split', name: 'Split Bill', icon: Plus },
             { id: 'settle', name: 'Settle', icon: CheckCheck },
             { id: 'history', name: 'History', icon: Clock },

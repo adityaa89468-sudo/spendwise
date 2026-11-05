@@ -27,6 +27,7 @@ public class MainActivity extends BridgeActivity {
     protected void onCreate(Bundle savedInstanceState) {
         registerPlugin(PlayBillingPlugin.class);
         registerPlugin(NativeGoogleAuthPlugin.class);
+        registerPlugin(AdSlotPlugin.class);
         super.onCreate(savedInstanceState);
         MobileAds.initialize(this, initializationStatus -> {
             loadAppOpenAd(true);

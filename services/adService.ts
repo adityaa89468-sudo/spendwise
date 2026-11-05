@@ -4,10 +4,39 @@ import {
   BannerAdPosition, 
   AdMobRewardItem,
 } from '@capacitor-community/admob';
-import { Capacitor } from '@capacitor/core';
+import { Capacitor, registerPlugin } from '@capacitor/core';
+
+interface AdSlotPluginInterface {
+  syncSlot(options: {
+    visible: boolean;
+    viewportTop: number;
+    width: number;
+    height: number;
+    safeTop: number;
+    safeBottom: number;
+  }): Promise<void>;
+}
+
+const AdSlotNative = registerPlugin<AdSlotPluginInterface>('AdSlot');
 
 const isNative = () => {
   return Capacitor.isNativePlatform();
+};
+
+export const syncNativeBannerSlot = async (options: {
+  visible: boolean;
+  viewportTop: number;
+  width: number;
+  height: number;
+  safeTop: number;
+  safeBottom: number;
+}) => {
+  if (!isNative()) return;
+  try {
+    await AdSlotNative.syncSlot(options);
+  } catch {
+    // ignore if plugin not available
+  }
 };
 
 export const APP_OPEN_AD_UNIT_ID = import.meta.env.VITE_ADMOB_APP_OPEN_ID || 'ca-app-pub-9364231981895017/3883779302';
@@ -84,7 +113,7 @@ export const showBanner = async () => {
     await AdMob.showBanner({
       adId: BANNER_AD_UNIT_ID,
       adSize: BannerAdSize.ADAPTIVE_BANNER,
-      position: BannerAdPosition.BOTTOM_CENTER,
+      position: BannerAdPosition.TOP_CENTER,
       margin: 0,
       isTesting: false
     });
@@ -96,6 +125,14 @@ export const showBanner = async () => {
 export const hideBanner = async () => {
   if (!isNative()) return;
   try {
+    await syncNativeBannerSlot({
+      visible: false,
+      viewportTop: -10000,
+      width: 0,
+      height: 0,
+      safeTop: 0,
+      safeBottom: 0,
+    });
     await AdMob.hideBanner();
   } catch (err) {
     console.error('AdMob hideBanner error:', err);
@@ -105,6 +142,14 @@ export const hideBanner = async () => {
 export const removeBanner = async () => {
   if (!isNative()) return;
   try {
+    await syncNativeBannerSlot({
+      visible: false,
+      viewportTop: -10000,
+      width: 0,
+      height: 0,
+      safeTop: 0,
+      safeBottom: 0,
+    });
     await AdMob.removeBanner();
   } catch (err) {
     console.error('AdMob removeBanner error:', err);

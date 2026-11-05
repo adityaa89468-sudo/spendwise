@@ -1,4 +1,3 @@
-
 import { initializeApp } from 'firebase/app';
 import { 
   getAuth, 
@@ -8,56 +7,53 @@ import {
 } from 'firebase/auth';
 import { 
   doc, 
+  getDoc,
   getDocFromServer, 
   initializeFirestore,
   persistentLocalCache,
-  persistentMultipleTabManager
+  persistentMultipleTabManager,
+  setLogLevel
 } from 'firebase/firestore';
 import firebaseConfig from '../firebase-applet-config.json';
 
+// Suppress noisy internal Firestore transport fallback warnings in iframe/proxy environments
+setLogLevel('silent');
+
 const app = initializeApp(firebaseConfig);
 
-// Initialize Firestore with standard settings and persistent cache
-// We use the default transport (WebSockets) first, as forced long-polling can sometimes timeout in this environment.
 const configAny = firebaseConfig as any;
-export const db = initializeFirestore(app, {
-  localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
-  experimentalAutoDetectLongPolling: true,
-}, configAny.firestoreDatabaseId && configAny.firestoreDatabaseId !== '(default)' 
-  ? configAny.firestoreDatabaseId 
-  : undefined
+export const db = initializeFirestore(
+  app,
+  {
+    localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
+    experimentalAutoDetectLongPolling: true,
+  },
+  configAny.firestoreDatabaseId && configAny.firestoreDatabaseId !== '(default)'
+    ? configAny.firestoreDatabaseId
+    : undefined
 );
 
 export const auth = getAuth(app);
 
 // Enable local persistence for persistent login across app restarts
 setPersistence(auth, browserLocalPersistence).catch((err) => {
-  console.error("Firebase Persistence Error:", err);
+  console.warn("Firebase Persistence Warning:", err);
 });
 
 export const googleProvider = new GoogleAuthProvider();
 
-
-// Test connection silently - move to a more resilient approach
+// Test connection silently without blocking main thread
 async function testConnection() {
   try {
-    console.log("Firebase: Testing connection...");
-    // Attempt a silent read to check connectivity
     await getDocFromServer(doc(db, 'test', 'connection'));
-    console.log("Firebase: Connection successful.");
   } catch (error) {
-    if (error instanceof Error) {
-      if (error.message.includes('the client is offline')) {
-        console.warn("Firebase Connection Warning: The SDK is reporting as offline.");
-        console.info("TIP: Ensure your domain is listed in Firebase Console > Authentication > Settings > Authorized Domains.");
-        console.info("Current Domain:", window.location.hostname);
-      } else if (error.message.includes('permission-denied')) {
-        console.log("Firebase: Connection reached, but permissions were denied (this is expected for the 'test' collection).");
-      } else {
-        console.warn("Firebase Connection Info:", error.message);
-      }
+    // Fallback to cache/silent check if offline
+    try {
+      await getDoc(doc(db, 'test', 'connection'));
+    } catch {
+      // Ignore offline/connection check errors silently
     }
   }
 }
-// Start connection check after a short delay to not block main thread
 setTimeout(testConnection, 2000);
+

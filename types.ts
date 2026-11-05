@@ -4,9 +4,41 @@ export interface UserProfile {
   displayName: string;
   roommateScore: number;
   streak: number;
+  longestStreak?: number;
+  lastCheckInDate?: string; // YYYY-MM-DD
+  checkInHistory?: string[]; // Array of YYYY-MM-DD dates
+  followedInstagram?: boolean;
   currentGroupId?: string;
   avatarUrl?: string;
   upiId?: string; // UPI ID for generating easy payment QR codes (e.g. upi@okaxis)
+  createdAt: string;
+}
+
+export interface CampaignParticipant {
+  uid: string;
+  displayName: string;
+  email: string;
+  roomName?: string;
+  roomCode?: string;
+  streakAtJoin: number;
+  followedInstagram?: boolean;
+  joinedAt: string;
+}
+
+export interface Campaign {
+  id: string;
+  title: string;
+  description: string;
+  thumbnailUrl: string;
+  conditions: string[];
+  minStreakRequired: number;
+  requireInstagramFollow?: boolean;
+  instagramUrl?: string;
+  winningReward: string;
+  rewardDate: string; // YYYY-MM-DD
+  status: 'active' | 'upcoming' | 'completed';
+  winnerAnnouncement?: string;
+  participants: CampaignParticipant[];
   createdAt: string;
 }
 

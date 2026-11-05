@@ -103,6 +103,26 @@
         "read": { "type": "boolean", "default": false }
       },
       "required": ["id", "groupId", "toUid", "text", "type", "createdAt", "read"]
+    },
+    "Campaign": {
+      "title": "Streak Campaign & Reward Giveaway",
+      "description": "Campaign posted by Admin with thumbnail, participation conditions, winning reward, and reward date",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "thumbnailUrl": { "type": "string" },
+        "conditions": { "type": "array" },
+        "minStreakRequired": { "type": "number" },
+        "winningReward": { "type": "string" },
+        "rewardDate": { "type": "string", "format": "date" },
+        "status": { "type": "string", "enum": ["active", "upcoming", "completed"] },
+        "winnerAnnouncement": { "type": "string" },
+        "participants": { "type": "array" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "title", "thumbnailUrl", "conditions", "winningReward", "rewardDate", "status", "createdAt"]
     }
   },
   "firestore": {
@@ -125,6 +145,10 @@
     "/groups/{groupId}/notifications/{notificationId}": {
       "schema": "AppNotification",
       "description": "Activity feed notifications for group members"
+    },
+    "/campaigns/{campaignId}": {
+      "schema": "Campaign",
+      "description": "Admin-created campaigns with conditions, thumbnails, and rewards on specific dates"
     }
   }
 }

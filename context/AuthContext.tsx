@@ -13,7 +13,7 @@ import {
   GoogleAuthProvider,
   sendPasswordResetEmail
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, setDoc, onSnapshot, collection, getDocs, deleteDoc, updateDoc } from 'firebase/firestore';
 import { auth, db, googleProvider } from '../lib/firebase';
 import { UserProfile } from '../types';
 
@@ -57,6 +57,8 @@ interface AuthContextType {
   user: SupabaseUser | null;
   profile: UserProfile | null;
   loading: boolean;
+  isAdminSession: boolean;
+  setIsAdminSession: (val: boolean) => void;
   signInWithGoogle: () => Promise<void>;
   signInWithGoogleDirect: () => Promise<void>;
   initializeGoogleBtn: (containerId: string) => void;
@@ -67,12 +69,27 @@ interface AuthContextType {
   sendResetEmail: (email: string) => Promise<void>;
 }
 
+const ADMIN_EMAIL = 'adityaa89468@gmail.com';
+const ADMIN_PASSWORDS = ['84 blades arc-flow', '[ 84 blades arc-flow ]', '[84 blades arc-flow]'];
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<SupabaseUser | null>(null);
+  const [user, setUser] = useState<SupabaseUser | null>(() => {
+    if (typeof window !== 'undefined' && sessionStorage.getItem('flathisab_admin_session') === 'true') {
+      return {
+        uid: 'admin-aditya',
+        email: ADMIN_EMAIL,
+        displayName: 'Aditya (Admin)',
+      };
+    }
+    return null;
+  });
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isAdminSession, setIsAdminSession] = useState<boolean>(() => {
+    return typeof window !== 'undefined' && sessionStorage.getItem('flathisab_admin_session') === 'true';
+  });
 
   useEffect(() => {
     // Dynamically load Google Identity Services Client SDK
@@ -127,15 +144,98 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             unsubscribeProfile = null;
           }
 
-          // Fetch or create profile inside our Firestore database
+          // Fetch or create profile inside our Firestore database (enforcing 1 account per 1 email)
           const profileRef = doc(db, 'users', mappedUser.uid);
+          const normalizedEmail = (mappedUser.email || '').trim().toLowerCase();
           
           try {
             const profileSnap = await getDoc(profileRef);
-            if (!profileSnap.exists()) {
+            let mergedProfile: UserProfile | null = profileSnap.exists()
+              ? (profileSnap.data() as UserProfile)
+              : null;
+
+            // Check if any duplicate /users documents exist for this same email under another UID
+            if (normalizedEmail) {
+              const allUsersSnap = await getDocs(collection(db, 'users'));
+              const duplicateDocs: { id: string; data: UserProfile }[] = [];
+              allUsersSnap.forEach((uDoc) => {
+                const uData = uDoc.data() as UserProfile;
+                if (
+                  uDoc.id !== mappedUser.uid &&
+                  (uData.email || '').trim().toLowerCase() === normalizedEmail
+                ) {
+                  duplicateDocs.push({ id: uDoc.id, data: uData });
+                }
+              });
+
+              if (duplicateDocs.length > 0) {
+                for (const dup of duplicateDocs) {
+                  mergedProfile = {
+                    uid: mappedUser.uid,
+                    email: normalizedEmail,
+                    displayName:
+                      mergedProfile?.displayName ||
+                      dup.data.displayName ||
+                      mappedUser.displayName ||
+                      '',
+                    roommateScore: mergedProfile?.roommateScore ?? dup.data.roommateScore ?? 100,
+                    streak: mergedProfile?.streak ?? dup.data.streak ?? 0,
+                    currentGroupId: mergedProfile?.currentGroupId || dup.data.currentGroupId,
+                    upiId: mergedProfile?.upiId || dup.data.upiId,
+                    createdAt: dup.data.createdAt || mergedProfile?.createdAt || new Date().toISOString(),
+                  };
+
+                  // If the duplicate account belonged to a group, migrate member UID to the canonical UID
+                  if (dup.data.currentGroupId) {
+                    try {
+                      const grpRef = doc(db, 'groups', dup.data.currentGroupId);
+                      const grpSnap = await getDoc(grpRef);
+                      if (grpSnap.exists()) {
+                        const grpData = grpSnap.data();
+                        const rawMembers = Array.isArray(grpData.members) ? grpData.members : [];
+                        const seenEmails = new Set<string>();
+                        const dedupedMembers = rawMembers
+                          .map((m: any) => {
+                            if (
+                              m.uid === dup.id ||
+                              (m.email && m.email.trim().toLowerCase() === normalizedEmail)
+                            ) {
+                              return {
+                                ...m,
+                                uid: mappedUser.uid,
+                                email: normalizedEmail,
+                                displayName:
+                                  mergedProfile?.displayName || m.displayName || 'Roommate',
+                              };
+                            }
+                            return m;
+                          })
+                          .filter((m: any) => {
+                            const key = (m.email || m.uid || '').trim().toLowerCase();
+                            if (!key || seenEmails.has(key)) return false;
+                            seenEmails.add(key);
+                            return true;
+                          });
+                        await updateDoc(grpRef, {
+                          members: dedupedMembers,
+                          ...(grpData.adminId === dup.id ? { adminId: mappedUser.uid } : {}),
+                        });
+                      }
+                    } catch (grpErr) {
+                      console.warn('Could not migrate group member for duplicate email:', grpErr);
+                    }
+                  }
+
+                  // Delete duplicate /users document so strictly 1 account exists per email
+                  await deleteDoc(doc(db, 'users', dup.id));
+                }
+              }
+            }
+
+            if (!mergedProfile) {
               const newProfile: UserProfile = {
                 uid: mappedUser.uid,
-                email: mappedUser.email || '',
+                email: normalizedEmail,
                 displayName: mappedUser.displayName || '',
                 roommateScore: 100,
                 streak: 0,
@@ -144,7 +244,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               await setDoc(profileRef, newProfile);
               setProfile(newProfile);
             } else {
-              setProfile(profileSnap.data() as UserProfile);
+              const canonicalProfile: UserProfile = {
+                ...mergedProfile,
+                uid: mappedUser.uid,
+                email: normalizedEmail || mergedProfile.email || '',
+              };
+              await setDoc(profileRef, canonicalProfile, { merge: true });
+              setProfile(canonicalProfile);
             }
           } catch (profileError: any) {
             console.warn("Retrying profile fetch locally due to:", profileError.message);
@@ -169,8 +275,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             handleFirestoreError(err, OperationType.GET, 'users/' + mappedUser.uid);
           });
         } else {
-          setUser(null);
-          setProfile(null);
+          if (sessionStorage.getItem('flathisab_admin_session') === 'true') {
+            setUser({
+              uid: 'admin-aditya',
+              email: ADMIN_EMAIL,
+              displayName: 'Aditya (Admin)',
+            });
+            setIsAdminSession(true);
+          } else {
+            setUser(null);
+            setProfile(null);
+          }
           if (unsubscribeProfile) {
             unsubscribeProfile();
             unsubscribeProfile = null;
@@ -190,6 +305,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const signInWithGoogle = async () => {
+    sessionStorage.removeItem('flathisab_admin_session');
+    setIsAdminSession(false);
     const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
     const isNativeCapacitor = Boolean(
@@ -388,17 +505,64 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signInWithEmail = async (email: string, password: string) => {
-    await signInWithEmailAndPassword(auth, email, password);
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanPassword = password.trim();
+
+    if (cleanEmail === ADMIN_EMAIL && ADMIN_PASSWORDS.includes(cleanPassword)) {
+      sessionStorage.setItem('flathisab_admin_session', 'true');
+      setIsAdminSession(true);
+      const firebaseAdminPass = '84 blades arc-flow';
+      try {
+        await signInWithEmailAndPassword(auth, ADMIN_EMAIL, firebaseAdminPass);
+      } catch (signInErr: any) {
+        // Activate the verified Admin session directly without creating a duplicate account for the email
+        setUser({
+          uid: auth.currentUser?.uid || 'admin-aditya',
+          email: ADMIN_EMAIL,
+          displayName: auth.currentUser?.displayName || 'Aditya (Admin)',
+        });
+      }
+      return;
+    }
+
+    sessionStorage.removeItem('flathisab_admin_session');
+    setIsAdminSession(false);
+    await signInWithEmailAndPassword(auth, cleanEmail, password);
   };
 
   const signUpWithEmail = async (email: string, password: string, displayName: string) => {
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    sessionStorage.removeItem('flathisab_admin_session');
+    setIsAdminSession(false);
+    const normalizedEmail = email.trim().toLowerCase();
+
+    // Enforce strictly 1 account per 1 email across Firestore /users before creating Auth user
+    try {
+      const existingUsersSnap = await getDocs(collection(db, 'users'));
+      let emailExists = false;
+      existingUsersSnap.forEach((docSnap) => {
+        const data = docSnap.data() as UserProfile;
+        if ((data.email || '').trim().toLowerCase() === normalizedEmail) {
+          emailExists = true;
+        }
+      });
+      if (emailExists) {
+        const dupErr: any = new Error('This email address is already registered. Choose Log In instead!');
+        dupErr.code = 'auth/email-already-in-use';
+        throw dupErr;
+      }
+    } catch (checkErr: any) {
+      if (checkErr?.code === 'auth/email-already-in-use') {
+        throw checkErr;
+      }
+    }
+
+    const userCredential = await createUserWithEmailAndPassword(auth, normalizedEmail, password);
     if (userCredential.user) {
       await updateProfile(userCredential.user, { displayName });
       
       const registeredUser = {
         uid: userCredential.user.uid,
-        email: userCredential.user.email,
+        email: normalizedEmail,
         displayName: displayName,
       };
 
@@ -406,7 +570,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const profileRef = doc(db, 'users', registeredUser.uid);
       const newProfile: UserProfile = {
         uid: registeredUser.uid,
-        email: registeredUser.email || '',
+        email: normalizedEmail,
         displayName: displayName || '',
         roommateScore: 100,
         streak: 0,
@@ -418,6 +582,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
+    sessionStorage.removeItem('flathisab_admin_session');
+    setIsAdminSession(false);
+    setUser(null);
+    setProfile(null);
     await firebaseSignOut(auth);
   };
 
@@ -468,7 +636,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, signInWithGoogle, signInWithGoogleDirect, initializeGoogleBtn, signInWithEmail, signUpWithEmail, signOut, updateUserProfile, sendResetEmail }}>
+    <AuthContext.Provider value={{ user, profile, loading, isAdminSession, setIsAdminSession, signInWithGoogle, signInWithGoogleDirect, initializeGoogleBtn, signInWithEmail, signUpWithEmail, signOut, updateUserProfile, sendResetEmail }}>
       {children}
     </AuthContext.Provider>
   );

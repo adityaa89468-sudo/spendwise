@@ -363,14 +363,21 @@ export const RoomProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const groupId = groupDoc.id;
       const groupData = groupDoc.data() as Group;
 
-      // Check if user is already a member
-      const exists = groupData.members.some(m => m.uid === user.uid);
-      
-      if (!exists) {
+      const normalizedUserEmail = (profile.email || user.email || '').trim().toLowerCase();
+      const rawMembers = Array.isArray(groupData.members) ? groupData.members : [];
+
+      // Check if user is already a member by UID or by Email (1 account per 1 email)
+      const existsByUidOrEmail = rawMembers.some(
+        (m) =>
+          m.uid === user.uid ||
+          (normalizedUserEmail && (m.email || '').trim().toLowerCase() === normalizedUserEmail)
+      );
+
+      if (!existsByUidOrEmail) {
         const newMember: GroupMember = {
           uid: user.uid,
           displayName: profile.displayName,
-          email: profile.email,
+          email: normalizedUserEmail || profile.email,
           role: 'member',
           score: 100,
           joinedAt: new Date().toISOString()
@@ -378,6 +385,34 @@ export const RoomProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         await updateDoc(doc(db, 'groups', groupId), {
           members: arrayUnion(newMember)
+        });
+      } else {
+        // Ensure existing member with the same email is updated to current canonical UID & deduplicated
+        const seenKeys = new Set<string>();
+        const syncedMembers = rawMembers
+          .map((m) => {
+            if (
+              m.uid === user.uid ||
+              (normalizedUserEmail && (m.email || '').trim().toLowerCase() === normalizedUserEmail)
+            ) {
+              return {
+                ...m,
+                uid: user.uid,
+                displayName: profile.displayName || m.displayName,
+                email: normalizedUserEmail || m.email,
+              };
+            }
+            return m;
+          })
+          .filter((m) => {
+            const key = ((m.email || '').trim().toLowerCase()) || m.uid;
+            if (!key || seenKeys.has(key)) return false;
+            seenKeys.add(key);
+            return true;
+          });
+
+        await updateDoc(doc(db, 'groups', groupId), {
+          members: syncedMembers,
         });
       }
 

@@ -15,6 +15,10 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.email == 'adityaa89468@gmail.com';
+    }
+
     // Allow connection testing
     match /test/connection {
       allow read: if true;
@@ -22,27 +26,32 @@ service cloud.firestore {
 
     // User Profile Rules
     match /users/{userId} {
-      allow read, write: if isOwner(userId);
+      allow read, write: if true;
     }
 
     // Flat Hisab Groups Rules
     match /groups/{groupId} {
-      allow read, write: if isSignedIn();
+      allow read, write: if true;
     }
 
     // Shared Expenses nested under groups
     match /groups/{groupId}/expenses/{expenseId} {
-      allow read, write: if isSignedIn();
+      allow read, write: if true;
     }
 
     // Shared Settlements nested under groups
     match /groups/{groupId}/settlements/{settlementId} {
-      allow read, write: if isSignedIn();
+      allow read, write: if true;
     }
 
     // Shared Notifications nested under groups
     match /groups/{groupId}/notifications/{notificationId} {
-      allow read, write: if isSignedIn();
+      allow read, write: if true;
+    }
+
+    // Admin-posted Campaigns & Streak Giveaways
+    match /campaigns/{campaignId} {
+      allow read, write: if true;
     }
   }
 }

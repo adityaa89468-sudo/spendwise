@@ -45,15 +45,25 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ darkMode, setDarkMode }) => {
 
     switch (code) {
       case 'auth/invalid-email':
+        return 'Please enter a valid email address.';
       case 'auth/invalid-credential':
-        return 'Invalid email or credentials. Please check and try again.';
+        if (message && !message.includes('Firebase:')) {
+          return message;
+        }
+        return 'Incorrect password for this email, or this account was registered with Google Sign-In. Please verify your password, click "Forgot Password?", or use "Continue with Google".';
       case 'auth/user-disabled':
         return 'This account has been disabled. Please contact support.';
       case 'auth/user-not-found':
         return 'No account matches this email. Please sign up first!';
       case 'auth/wrong-password':
+        if (message && !message.includes('Firebase:')) {
+          return message;
+        }
         return 'Incorrect password. Please verify and try again.';
       case 'auth/email-already-in-use':
+        if (message && !message.includes('Firebase:')) {
+          return message;
+        }
         return 'This email address is already registered. Choose Log In instead!';
       case 'auth/weak-password':
         return 'Password is too weak. Please use at least 6 characters.';
@@ -110,7 +120,6 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ darkMode, setDarkMode }) => {
         await signUpWithEmail(email.trim(), password, fullName.trim());
       }
     } catch (err: any) {
-      console.error(err);
       setErrorMsg(getFriendlyError(err));
     } finally {
       setIsSubmitting(false);
@@ -123,7 +132,6 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ darkMode, setDarkMode }) => {
     try {
       await signInWithGoogle();
     } catch (err: any) {
-      console.error(err);
       setErrorMsg(getFriendlyError(err));
     } finally {
       setIsSubmitting(false);
@@ -147,7 +155,6 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ darkMode, setDarkMode }) => {
       await sendResetEmail(resetEmail.trim());
       setResetSuccessMsg(`A secure password reset link has been successfully sent to ${resetEmail.trim()}. Please check your email inbox and follow the link to reset your password.`);
     } catch (err: any) {
-      console.error(err);
       setErrorMsg(getFriendlyError(err));
     } finally {
       setIsSubmitting(false);

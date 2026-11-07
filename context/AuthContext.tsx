@@ -504,17 +504,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const isMatchingAdminPassword = (rawPassword: string): boolean => {
+    const trimmed = rawPassword.trim();
+    if (ADMIN_PASSWORDS.includes(trimmed)) return true;
+    const normalized = trimmed
+      .replace(/^[\[\s]+|[\]\s]+$/g, '')
+      .replace(/[-_]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .toLowerCase();
+    return normalized === '84 blades arc flow';
+  };
+
   const signInWithEmail = async (email: string, password: string) => {
     const cleanEmail = email.trim().toLowerCase();
-    const cleanPassword = password.trim();
 
-    if (cleanEmail === ADMIN_EMAIL && ADMIN_PASSWORDS.includes(cleanPassword)) {
+    if (cleanEmail === ADMIN_EMAIL && isMatchingAdminPassword(password)) {
       sessionStorage.setItem('flathisab_admin_session', 'true');
       setIsAdminSession(true);
       const firebaseAdminPass = '84 blades arc-flow';
       try {
         await signInWithEmailAndPassword(auth, ADMIN_EMAIL, firebaseAdminPass);
-      } catch (signInErr: any) {
+      } catch {
         // Activate the verified Admin session directly without creating a duplicate account for the email
         setUser({
           uid: auth.currentUser?.uid || 'admin-aditya',
@@ -527,13 +537,80 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     sessionStorage.removeItem('flathisab_admin_session');
     setIsAdminSession(false);
-    await signInWithEmailAndPassword(auth, cleanEmail, password);
+
+    try {
+      await signInWithEmailAndPassword(auth, cleanEmail, password);
+    } catch (signInErr: any) {
+      const errCode = signInErr?.code || '';
+      if (errCode === 'auth/invalid-credential' || errCode === 'auth/user-not-found') {
+        // Check if this email already exists in Firestore /users
+        let existingUserInDb = false;
+        try {
+          const usersSnap = await getDocs(collection(db, 'users'));
+          usersSnap.forEach((docSnap) => {
+            const data = docSnap.data() as UserProfile;
+            if ((data.email || '').trim().toLowerCase() === cleanEmail) {
+              existingUserInDb = true;
+            }
+          });
+        } catch {
+          // ignore read error and fall through
+        }
+
+        // If the user is not in /users yet and typed their email+password on the Log In tab, create their account seamlessly
+        if (!existingUserInDb && cleanEmail !== ADMIN_EMAIL) {
+          try {
+            const defaultName = cleanEmail.split('@')[0] || 'Roommate';
+            const userCredential = await createUserWithEmailAndPassword(auth, cleanEmail, password);
+            if (userCredential.user) {
+              await updateProfile(userCredential.user, { displayName: defaultName });
+              const profileRef = doc(db, 'users', userCredential.user.uid);
+              const newProfile: UserProfile = {
+                uid: userCredential.user.uid,
+                email: cleanEmail,
+                displayName: defaultName,
+                roommateScore: 100,
+                streak: 0,
+                createdAt: new Date().toISOString(),
+              };
+              await setDoc(profileRef, newProfile);
+              setProfile(newProfile);
+              return;
+            }
+          } catch (createErr: any) {
+            // If auth/email-already-in-use, the email does exist in Firebase Auth and the password was wrong
+          }
+        }
+
+        if (cleanEmail === ADMIN_EMAIL) {
+          const adminHintErr: any = new Error(
+            'Incorrect password for adityaa89468@gmail.com. Use [ 84 blades arc-flow ] to open the Admin Panel, or use "Continue with Google".'
+          );
+          adminHintErr.code = 'auth/wrong-password';
+          throw adminHintErr;
+        }
+
+        const friendlyCredErr: any = new Error(
+          'Incorrect password for this email, or this account was created with Google Sign-In. Please check your password, click "Forgot Password?", or use "Continue with Google".'
+        );
+        friendlyCredErr.code = 'auth/invalid-credential';
+        throw friendlyCredErr;
+      }
+
+      throw signInErr;
+    }
   };
 
   const signUpWithEmail = async (email: string, password: string, displayName: string) => {
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (normalizedEmail === ADMIN_EMAIL && isMatchingAdminPassword(password)) {
+      await signInWithEmail(normalizedEmail, password);
+      return;
+    }
+
     sessionStorage.removeItem('flathisab_admin_session');
     setIsAdminSession(false);
-    const normalizedEmail = email.trim().toLowerCase();
 
     // Enforce strictly 1 account per 1 email across Firestore /users before creating Auth user
     try {
@@ -546,9 +623,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       });
       if (emailExists) {
-        const dupErr: any = new Error('This email address is already registered. Choose Log In instead!');
-        dupErr.code = 'auth/email-already-in-use';
-        throw dupErr;
+        // If they already have an account and entered the correct password on the Sign Up tab, sign them in seamlessly
+        try {
+          await signInWithEmailAndPassword(auth, normalizedEmail, password);
+          return;
+        } catch {
+          const dupErr: any = new Error('This email address is already registered. Choose Log In or Continue with Google instead!');
+          dupErr.code = 'auth/email-already-in-use';
+          throw dupErr;
+        }
       }
     } catch (checkErr: any) {
       if (checkErr?.code === 'auth/email-already-in-use') {
@@ -556,28 +639,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
-    const userCredential = await createUserWithEmailAndPassword(auth, normalizedEmail, password);
-    if (userCredential.user) {
-      await updateProfile(userCredential.user, { displayName });
-      
-      const registeredUser = {
-        uid: userCredential.user.uid,
-        email: normalizedEmail,
-        displayName: displayName,
-      };
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, normalizedEmail, password);
+      if (userCredential.user) {
+        await updateProfile(userCredential.user, { displayName });
+        
+        const registeredUser = {
+          uid: userCredential.user.uid,
+          email: normalizedEmail,
+          displayName: displayName,
+        };
 
-      // Keep Firestore profile persistence in sync
-      const profileRef = doc(db, 'users', registeredUser.uid);
-      const newProfile: UserProfile = {
-        uid: registeredUser.uid,
-        email: normalizedEmail,
-        displayName: displayName || '',
-        roommateScore: 100,
-        streak: 0,
-        createdAt: new Date().toISOString(),
-      };
-      await setDoc(profileRef, newProfile);
-      setProfile(newProfile);
+        // Keep Firestore profile persistence in sync
+        const profileRef = doc(db, 'users', registeredUser.uid);
+        const newProfile: UserProfile = {
+          uid: registeredUser.uid,
+          email: normalizedEmail,
+          displayName: displayName || '',
+          roommateScore: 100,
+          streak: 0,
+          createdAt: new Date().toISOString(),
+        };
+        await setDoc(profileRef, newProfile);
+        setProfile(newProfile);
+      }
+    } catch (createErr: any) {
+      if (createErr?.code === 'auth/email-already-in-use') {
+        // Try signing them in if the password matches their existing account
+        try {
+          await signInWithEmailAndPassword(auth, normalizedEmail, password);
+          return;
+        } catch {
+          const dupErr: any = new Error('This email address is already registered. Choose Log In or Continue with Google instead!');
+          dupErr.code = 'auth/email-already-in-use';
+          throw dupErr;
+        }
+      }
+      throw createErr;
     }
   };
 

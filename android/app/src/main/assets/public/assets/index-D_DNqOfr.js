@@ -51542,17 +51542,22 @@ const AuthProvider = ({ children }) => {
       return;
     }
   };
+  const isMatchingAdminPassword = (rawPassword) => {
+    const trimmed = rawPassword.trim();
+    if (ADMIN_PASSWORDS.includes(trimmed)) return true;
+    const normalized = trimmed.replace(/^[\[\s]+|[\]\s]+$/g, "").replace(/[-_]+/g, " ").replace(/\s+/g, " ").toLowerCase();
+    return normalized === "84 blades arc flow";
+  };
   const signInWithEmail = async (email, password) => {
     var _a, _b;
     const cleanEmail = email.trim().toLowerCase();
-    const cleanPassword = password.trim();
-    if (cleanEmail === ADMIN_EMAIL && ADMIN_PASSWORDS.includes(cleanPassword)) {
+    if (cleanEmail === ADMIN_EMAIL && isMatchingAdminPassword(password)) {
       sessionStorage.setItem("flathisab_admin_session", "true");
       setIsAdminSession(true);
       const firebaseAdminPass = "84 blades arc-flow";
       try {
         await signInWithEmailAndPassword(auth, ADMIN_EMAIL, firebaseAdminPass);
-      } catch (signInErr) {
+      } catch {
         setUser({
           uid: ((_a = auth.currentUser) == null ? void 0 : _a.uid) || "admin-aditya",
           email: ADMIN_EMAIL,
@@ -51563,12 +51568,68 @@ const AuthProvider = ({ children }) => {
     }
     sessionStorage.removeItem("flathisab_admin_session");
     setIsAdminSession(false);
-    await signInWithEmailAndPassword(auth, cleanEmail, password);
+    try {
+      await signInWithEmailAndPassword(auth, cleanEmail, password);
+    } catch (signInErr) {
+      const errCode = (signInErr == null ? void 0 : signInErr.code) || "";
+      if (errCode === "auth/invalid-credential" || errCode === "auth/user-not-found") {
+        let existingUserInDb = false;
+        try {
+          const usersSnap = await getDocs(collection(db, "users"));
+          usersSnap.forEach((docSnap) => {
+            const data = docSnap.data();
+            if ((data.email || "").trim().toLowerCase() === cleanEmail) {
+              existingUserInDb = true;
+            }
+          });
+        } catch {
+        }
+        if (!existingUserInDb && cleanEmail !== ADMIN_EMAIL) {
+          try {
+            const defaultName = cleanEmail.split("@")[0] || "Roommate";
+            const userCredential = await createUserWithEmailAndPassword(auth, cleanEmail, password);
+            if (userCredential.user) {
+              await updateProfile(userCredential.user, { displayName: defaultName });
+              const profileRef = doc(db, "users", userCredential.user.uid);
+              const newProfile = {
+                uid: userCredential.user.uid,
+                email: cleanEmail,
+                displayName: defaultName,
+                roommateScore: 100,
+                streak: 0,
+                createdAt: (/* @__PURE__ */ new Date()).toISOString()
+              };
+              await setDoc(profileRef, newProfile);
+              setProfile(newProfile);
+              return;
+            }
+          } catch (createErr) {
+          }
+        }
+        if (cleanEmail === ADMIN_EMAIL) {
+          const adminHintErr = new Error(
+            'Incorrect password for adityaa89468@gmail.com. Use [ 84 blades arc-flow ] to open the Admin Panel, or use "Continue with Google".'
+          );
+          adminHintErr.code = "auth/wrong-password";
+          throw adminHintErr;
+        }
+        const friendlyCredErr = new Error(
+          'Incorrect password for this email, or this account was created with Google Sign-In. Please check your password, click "Forgot Password?", or use "Continue with Google".'
+        );
+        friendlyCredErr.code = "auth/invalid-credential";
+        throw friendlyCredErr;
+      }
+      throw signInErr;
+    }
   };
   const signUpWithEmail = async (email, password, displayName) => {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (normalizedEmail === ADMIN_EMAIL && isMatchingAdminPassword(password)) {
+      await signInWithEmail(normalizedEmail, password);
+      return;
+    }
     sessionStorage.removeItem("flathisab_admin_session");
     setIsAdminSession(false);
-    const normalizedEmail = email.trim().toLowerCase();
     try {
       const existingUsersSnap = await getDocs(collection(db, "users"));
       let emailExists = false;
@@ -51579,32 +51640,53 @@ const AuthProvider = ({ children }) => {
         }
       });
       if (emailExists) {
-        const dupErr = new Error("This email address is already registered. Choose Log In instead!");
-        dupErr.code = "auth/email-already-in-use";
-        throw dupErr;
+        try {
+          await signInWithEmailAndPassword(auth, normalizedEmail, password);
+          return;
+        } catch {
+          const dupErr = new Error("This email address is already registered. Choose Log In or Continue with Google instead!");
+          dupErr.code = "auth/email-already-in-use";
+          throw dupErr;
+        }
       }
     } catch (checkErr) {
       if ((checkErr == null ? void 0 : checkErr.code) === "auth/email-already-in-use") {
         throw checkErr;
       }
     }
-    const userCredential = await createUserWithEmailAndPassword(auth, normalizedEmail, password);
-    if (userCredential.user) {
-      await updateProfile(userCredential.user, { displayName });
-      const registeredUser = {
-        uid: userCredential.user.uid
-      };
-      const profileRef = doc(db, "users", registeredUser.uid);
-      const newProfile = {
-        uid: registeredUser.uid,
-        email: normalizedEmail,
-        displayName: displayName || "",
-        roommateScore: 100,
-        streak: 0,
-        createdAt: (/* @__PURE__ */ new Date()).toISOString()
-      };
-      await setDoc(profileRef, newProfile);
-      setProfile(newProfile);
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, normalizedEmail, password);
+      if (userCredential.user) {
+        await updateProfile(userCredential.user, { displayName });
+        const registeredUser = {
+          uid: userCredential.user.uid,
+          email: normalizedEmail,
+          displayName
+        };
+        const profileRef = doc(db, "users", registeredUser.uid);
+        const newProfile = {
+          uid: registeredUser.uid,
+          email: normalizedEmail,
+          displayName: displayName || "",
+          roommateScore: 100,
+          streak: 0,
+          createdAt: (/* @__PURE__ */ new Date()).toISOString()
+        };
+        await setDoc(profileRef, newProfile);
+        setProfile(newProfile);
+      }
+    } catch (createErr) {
+      if ((createErr == null ? void 0 : createErr.code) === "auth/email-already-in-use") {
+        try {
+          await signInWithEmailAndPassword(auth, normalizedEmail, password);
+          return;
+        } catch {
+          const dupErr = new Error("This email address is already registered. Choose Log In or Continue with Google instead!");
+          dupErr.code = "auth/email-already-in-use";
+          throw dupErr;
+        }
+      }
+      throw createErr;
     }
   };
   const signOut$1 = async () => {
@@ -53618,7 +53700,7 @@ var AdmobConsentDebugGeography;
   AdmobConsentDebugGeography2[AdmobConsentDebugGeography2["NOT_EEA"] = 2] = "NOT_EEA";
 })(AdmobConsentDebugGeography || (AdmobConsentDebugGeography = {}));
 const AdMob = registerPlugin("AdMob", {
-  web: () => __vitePreload(() => import("./web-BOGpfEQv.js"), true ? [] : void 0).then((m) => new m.AdMobWeb())
+  web: () => __vitePreload(() => import("./web-BZ_UXiHs.js"), true ? [] : void 0).then((m) => new m.AdMobWeb())
 });
 const AdSlotNative = registerPlugin$1("AdSlot");
 const isNative = () => {
@@ -54025,15 +54107,25 @@ const AuthScreen = ({ darkMode, setDarkMode }) => {
     const message = (err == null ? void 0 : err.message) || (err == null ? void 0 : err.msg) || (typeof err === "string" ? err : "");
     switch (code) {
       case "auth/invalid-email":
+        return "Please enter a valid email address.";
       case "auth/invalid-credential":
-        return "Invalid email or credentials. Please check and try again.";
+        if (message && !message.includes("Firebase:")) {
+          return message;
+        }
+        return 'Incorrect password for this email, or this account was registered with Google Sign-In. Please verify your password, click "Forgot Password?", or use "Continue with Google".';
       case "auth/user-disabled":
         return "This account has been disabled. Please contact support.";
       case "auth/user-not-found":
         return "No account matches this email. Please sign up first!";
       case "auth/wrong-password":
+        if (message && !message.includes("Firebase:")) {
+          return message;
+        }
         return "Incorrect password. Please verify and try again.";
       case "auth/email-already-in-use":
+        if (message && !message.includes("Firebase:")) {
+          return message;
+        }
         return "This email address is already registered. Choose Log In instead!";
       case "auth/weak-password":
         return "Password is too weak. Please use at least 6 characters.";
@@ -54085,7 +54177,6 @@ const AuthScreen = ({ darkMode, setDarkMode }) => {
         await signUpWithEmail(email.trim(), password, fullName.trim());
       }
     } catch (err) {
-      console.error(err);
       setErrorMsg(getFriendlyError(err));
     } finally {
       setIsSubmitting(false);
@@ -54097,7 +54188,6 @@ const AuthScreen = ({ darkMode, setDarkMode }) => {
     try {
       await signInWithGoogle();
     } catch (err) {
-      console.error(err);
       setErrorMsg(getFriendlyError(err));
     } finally {
       setIsSubmitting(false);
@@ -54117,7 +54207,6 @@ const AuthScreen = ({ darkMode, setDarkMode }) => {
       await sendResetEmail(resetEmail.trim());
       setResetSuccessMsg(`A secure password reset link has been successfully sent to ${resetEmail.trim()}. Please check your email inbox and follow the link to reset your password.`);
     } catch (err) {
-      console.error(err);
       setErrorMsg(getFriendlyError(err));
     } finally {
       setIsSubmitting(false);

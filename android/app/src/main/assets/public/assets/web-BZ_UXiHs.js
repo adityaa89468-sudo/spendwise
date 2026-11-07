@@ -1,4 +1,4 @@
-import { W as WebPlugin, A as AdmobConsentStatus } from "./index-Djm0dhuq.js";
+import { W as WebPlugin, A as AdmobConsentStatus } from "./index-D_DNqOfr.js";
 class AdMobWeb extends WebPlugin {
   async initialize() {
     console.log("initialize");
